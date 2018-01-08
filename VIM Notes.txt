@@ -1,0 +1,65 @@
+VIM NOTES
+
+
+
+Modes:
+Insert - write text (i)
+Normal - navigate and manipulate text (esc)
+visual - select text using movement keys before you decide
+	what to do with it.
+
+Move cursor:
+h - left
+j - down
+k - up
+l - right
+
+w - start of NEXT word
+e - end of CURRENT word
+b - beginning of CURRENT word
+
+# + movement key = that many in that direction
+
+
+#i char/string + esc - inserts # of string at cursor location
+I.e. a line of dashes could be created by doing: 30i- esc
+
+[#]f letter to find occurrence
+
+
+For ( ) or { }:
+% will jump back and forth to the matching one
+
+0 - beginning of line
+$ - end of line
+
+
+* - find next occurrence of word with cursor
+# - find previous occurrence of word with cursor
+
+
+gg - beginning of file
+G - end of file
+
+#G - specific line
+
+/text - search for this text  (regex OK in real vim)
+n - find next occurrence
+N - find previous occurrence
+
+o - insert a new line and allow for text
+
+
+x - delete character under the cursor
+r - replace a single character
+d - delete command
+	-> can be combined with movement
+	dw - deletes 1st word to the right side of cursor
+	-> copies content so you can paste it with p in another location
+	in real vim
+
+. - repeat prior command
+
+u - undo
+ctrl + r - redo
+

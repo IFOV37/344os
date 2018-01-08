@@ -1,0 +1,344 @@
+344 - Operating System Notes
+
+Block 1
+======================================================================================
+
+Intro to OS1 video 1
+--------------------------------------------------------------------------------------
+
+
+*nix - very stable
+
+Operating System - software program that sits between software apps and the computational hardware
+
+
+Program: stored algo or plan of execution
+
+Process: program that has been loaded into memory and is executing
+
+Thread: a line of execution in a process
+
+
+Standard OS Services
+
+1) Process and thread mgmt
+	-> strt new pgm
+	-> end proc/thread
+	-> debug
+
+2) File i/o mgmt
+	-> bits into meaningful structures: files
+	-> interfaces for r/w to files
+	-> comm w/ external devices
+	-> organizing files: directories
+
+
+3) Interprocess Communication (IPC)
+	-> signals, pipes, network sockets (TCP/IP)
+	-> including between 2 diff comps
+
+
+4) Process coordination (contention mgmt)
+	-> contention mgmt leads to shared access
+
+
+Interaction with OS:
+
+Users: GUI and CMD line shell
+
+PGMs:
+	Functions: sys calls and API - fns
+
+	Network comms:  msg-based and conn-based
+
+
+
+
+Intro to UNIX  video 2
+--------------------------------------------------------------------------------------
+
+Jan 1 1970 - "time zero" for UNIX
+	-> text processing added so other people/departments could use UNIX
+
+UNIX rewritten in C in 1972
+	-> unix couldn't be turned into a product due to regulations
+
+Linux - initially developed by Linus Torvalds
+	-> Unix like
+	-> all the little kernel like things that tell it how to do everything can't be shared due to license agreements
+	-> this is copied (form of it) and called Linux
+	-> adopts POSIX UNIX specs
+		-> aka code written here shouldn't need many changes to run on Linux
+	-> very stable, robust, and free
+	-> first version released 1994
+
+
+Many distros: kernel + tools
+	-> Ubunutu, openSUSE, Red Hat, Debian, Arch Liniux, Chrome OS, Mint etc.
+	-> all downloadable, some can be purchased
+
+
+Distros created with different purposes and features in mind
+	-> Ubuntu installs evertyhing easily
+	-> Arch Linux is opposite, requiring everything to be installed manually
+	-> Tails is built to be private from the ground up
+
+
+What is the shell? (Modern systems have a GUI, but we are going to look at the shell)
+
+	-> this is the user interface to the operating system - a text-based command line interpreter aka prompt
+
+	-> Provides acces to all UNIX user-lvl pgms
+		-> start pgms
+		-> manage processes (job ctrl)
+		-> connect together processes (pipes)
+		-> manage i/o to and from processes (redirection)
+		-> kill pgms
+
+
+Shell Prompts:
+	-> traditional prompt and cursor - your commands go after the prompt
+	-> customizable
+
+	-> $ - typical prompt for BASH
+
+
+
+ls -a (-a is the switch to show hidden files)
+
+
+Most Common UNIX Commands:
+
+directory/file mgmt:
+	-> cd, pwd, ls, mkdir, rmdir, mv, cp, rm, ln, chmod
+
+	cd: navigate directories
+		~ to home
+
+	pwd: print out current path
+
+	ls: show files/folders in current directory
+		-pla
+			p: slash
+			l: long format
+			a: show both visible and hidden folders
+
+		alias: alias l="ls -pla --color=auto"
+			-> can type l and this will perform the above command. Kind of like a variable
+
+			*** can be placed into ~/.bashrc so it will be run each time you log into this comp ***
+
+	mkdir: create directory
+		-> mkdir tempdir
+
+	rmdir: delete directory
+		-> rmdir tempdir  (may not work if not empty)
+
+	rm: delete files (and directories if used recursively)
+		NOTE: OSU auto subs rm -i so it has a y/n option to ensure you don't accidentaly delete the file
+
+		-> rm myfile
+
+		-> rm -rf tempdir
+			r: delete dir and all files in it
+			f: "don't ask me, just do it"
+
+	mv: move or rename files and directories
+		-> mv myfile tempdir
+			This recognizes if tempdir exists, it will move the file there
+
+		-> my myfile_backup myfile
+
+	cp: copy files and directories
+		-> cp myfile myfile_backup
+
+		-> cp myfile ../newfile
+			Creates a copy of myfile named newfile 1 folder up
+
+	touch myfile: creates a file if it doesn't exist (0 bytes)
+		-> if it does exist, it will update the last used timestamp
+
+
+
+file viewing and selecting:
+	-> cat, more/less, head, tail, grep, cut
+
+editors:
+	-> vi, (x)emacs, pico, textedit
+
+other useful commands:
+	-> script, find, telnet, ssh, and many more!
+
+
+shell auto opens the terminal for reading-from, with one file and for writing-to with 2 files:
+
+when running program ls (or another program):
+	
+	it comes into existance and has 3 files ready to go
+
+		1) Standard In (file descriptor 0)
+			stdin
+
+		2) Standard Out (1)
+			stdout
+
+		3) Standard Error (2)
+			stderr
+
+			
+If you don't specify otherwise, pgm input/output goes to and from the shell prompt by default on every line
+
+
+Common UNIX Commands - Getting Data from Files:
+
+	echo - sends character data to standard out
+
+		echo test text: outputs test text
+			-> sends data to stdout (not screen)
+				-> since stdout is to the terminal, it displays to the terminal
+
+		-e - interpret special characters
+			echo -e "test text\nnext line"
+						test text
+						next line
+
+	cat - concatenate character data stored in a file with char data from other files
+		-> primarily to dump data to the terminal
+		-> sends data to stdout unless explicityly changed from the terminal
+
+
+	redirecting stdout:  >  operator   (a file is about to be the redirect)
+
+		echo -e "cookie\nbeefcake\napple" > foodlist
+		ls  (shows foodlist)
+		cat foodlist
+
+			cookie
+			beefcake
+			apple
+
+
+	sort - takes data from stdin OR a file and sends the data, alphabetically sorted by line, to stdout
+
+		sort foodlist
+
+			apple
+			beefcake
+			cookie
+
+	redirecting stdin: <  operator (tells stdin to open from a diff file for reading)
+
+		sort < foodlist
+				-> bash opens up the name file, sends the data as input to the pgm on left
+				-> sort, meanwhile, has no 1st argument, so it reads data from stdin, and does not know where the data comes from!  It gets sorted and sent to stdout.
+
+			apple
+			beefcake
+			cookie
+
+	stdin with no redirection: (will be used in program 1)
+
+		cat > list
+			-> cat doesn't have an arg and attempts to read from stdin
+			-> stdin still has terminal open for input
+				-> so, we can get input from the keyboard line by line
+					-> hit return after each line
+				-> to stop, ^d
+			-> bash takes the data from the pgm on left, opens the name file and writes the data into it
+
+		cat list .. will print this data
+
+
+	sort command can be given input and an output location on same line
+		sort < foodlist > sortedList
+
+		or
+
+		sort >sortedList <foodlist
+			-> spaces not necessary
+			-> not read left to right
+
+		-nr
+			n: numeric sort
+			r: reverse order
+
+	Shell Filename Expansion
+		-> certain metacharacters are expanded and replaced with all files with matching names
+
+		* - matches anything
+		? - matches any one characters
+
+		(not regular expression encoding - grep)
+
+	Pipes
+		-> provides a way to communicate between commands without using temporary files to hold the data
+
+		echo -e "cookie\nbeefcake\napple" | sort
+
+		echo -e "cookie\nbeefcake\napple" > foodlist
+		cat foodlist | sort
+
+		cat foodlist | sort > sortedList
+		cat sortedList
+				-> cat foodlist piping into sort command then sends it to sortedList
+
+		*a pipe takes the stdout of one command and connects it to the stdin of the next*
+
+
+
+	>> operator appends
+
+	more - takes char data and display sonly one screen-full at a time;
+		-> nav up, down  and spacebar; quit with q
+
+
+
+ 
+
+Shell Scripting (bash) video 3
+--------------------------------------------------------------------------------------
+
+all commands accessible from shell can be placed into a shell "script"
+	-> executed line by line, as if being typed in line by line
+
+shell script
+	-> high level
+		-> vars, conditionals, loops, etc
+	-> interpreted
+		-> no compiling, no var dec, no mem mgmt (like js)
+	-> powerful/efficient
+		-> do a lot with a little code
+		-> can interface with any UNIX pgm that uses stdin, stdout, stderr
+	-> string and file oriented
+
+	-> used to automate tasks
+	-> simplify complex commands, etc
+	-> often used to glue pgms together
+
+
+	Hello World!
+	--------------
+
+	#!/bin/bash                        // #! shebag chars (# normally comment) 1st line tells UNIX the path to 											the shell with which to interpret the script
+	# Obligatory programming example   // comment
+	echo Hello World! 					// line to execute begins here
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

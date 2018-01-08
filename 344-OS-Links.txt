@@ -1,0 +1,30 @@
+344 - Operating System information
+
+
+C shell tutorial:
+https://www.cs.duke.edu/csl/docs/csh.html
+
+Writing a shell in C (not as relevant):
+https://brennan.io/2015/01/16/write-a-shell-in-c/
+
+Bash shell:
+http://www.tldp.org/LDP/Bash-Beginners-Guide/html/
+
+Bash scripting tutorial:
+https://ryanstutorials.net/bash-scripting-tutorial/
+
+bash shell language:
+http://www.bash.academy/
+
+vi tutorial:
+https://ryanstutorials.net/linuxtutorial/vi.php
+
+linux:
+https://ryanstutorials.net/linuxtutorial/
+
+bash shell scripting tutorial:
+https://www.shellscript.sh/
+
+list of bash tutorials:
+http://wiki.bash-hackers.org/scripting/tutoriallist
+
