@@ -324,19 +324,121 @@ shell script
 	echo Hello World! 					// line to execute begins here
 
 
+	Variables:
+
+	assigning (very weakly typed)
+		myint=1
+		myint=Ben
+
+	to display:
+		echo $myint 
+
+	Quotation marks - protecting the text
+		-> control expansion of variables within strings of text
+
+		single quotes: no variable expansion
+
+			$  printf 'all your base $abtu\n'
+				all your base $abtu
+					-> ignored variable
+
+
+		double quotes: variables are expanded
+			$  printf "all your base $abtu\n"
+				all your base are belong to us
+
+
+		\ means to eval literally instead of interpret
+		nt="NOTTACHANCE"
+		printf "\$nt"; printf "$nt\n"
+			result: $ntNOTTACHANCE
+
+
+Printing example - built from scratch
+
+echo "#!/bin/bash"
+	-bash: !/bin/bash": event not found
+		-> because the history feature engages when ! is the first character
+
+echo "#\x21/bin/bash"
+	-> without -e argument, the hex ASCII code 21 for ! won't be expanded
+
+finally:
+
+echo -e "#\x21/bin/bash" > cAd
+echo -e "echo \"cat\"\necho \"doge\"\necho \"kat\"\necho \"doug\"" | sort >> cAd
+chmod +x cAd    - make this file be executable, more on chmod later
+cAd
+
+
+We coudl write in emacs, vi, pico, etc...
+If ^M (different line endings)
+	-> Windows CR and LF
+		-> CR returns back to left
+		-> LF moves everything up
+	-> unix machine = single character
+
+	dox2unix will convert windows line endings to those used by UNIX
+
+
+Shell keywords:
+	-> cmds in bash that are interepred by shell as delimiters, branching constructs, and loops,e tc..
+
+	compgen - generates possible completion matches for various categories of keywords
+		-k  all reserved keywords
+
+	AKA, NO KEYWORDS AS VARIABLES
+
+			if
+			then
+			else
+			elif
+			fi
+			case
+			esac
+			for
+			select
+			while
+			until
+			do
+			done
+			in
+			function
+			time
+			{
+			}
+			!
+			[[
+			]]
+			coproc
+
+
+Environment variables
+	-> set of vars that are always available in your shell
+	-> ctrl options that change the operation of the shell
+
+	few common ones:
+		PATH - set of directories bash will search through to find a command
+		HOME - shortcut bak to the home directory (equivalent to ~)
+		SHELL - full path ot the default shell
+		HOSTNAME - name of the computer you're currently using
+
+		printenv to see all + current contents
+
+		Ex:
+		echo $PATH
+			-> the directories from left to right (sequentially) will be searched for the command I would have entered
 
 
 
 
 
 
-
-
-
-
-
-
-
+Ways to run script:
+chmod 755 scriptname   (gives permission to run the script)
+	-> tool to set defaults is unmask, but we really don't want to set all files you create as executables
+bash scriptname
+chmod +x scriptname
 
 
 
