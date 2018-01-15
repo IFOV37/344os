@@ -1,0 +1,71 @@
+Program 1 - matrices - Notes
+----------------------------------------------
+
+
+Should be named: matrix
+	general format of the matrix command:
+		matrix OPERATION [ARGUMENT]  <- o and a are italic
+
+	must do the following:
+		1) matrix dims [MATRIX]
+			-> prints dimesions of the matrix as rows, space, cols
+		2) matrix transpose [MATRIX]
+			-> reflect the eles of matrix along the diagonal MxN becomes NxM (diags unchanged)
+		3) matrix mean [MATRIX]
+			-> take MxN and return 1xN row vector. 1st ele is mean of col 1, 2nd of col 2, etc..
+	* 3 above perform ops on file named MATRIX or on a matrix provided via stdin
+
+		4) matrix add MATRIX_LEFT MATRIX_RIGHT
+			-> take 2 MxNs and add them toegether element wise to produce MxN
+			-> rtn error if matrices do not have the same dims
+		5) matrix multiply MATRIX_LEFT MATRIX_RIGHT
+			-> take MxN and NxP, produce MxP
+				-> not commutative
+
+
+
+Calc matrix operations using input from file OR stdin
+	-> input = whole number value separated by tabs into a rectangular matrix
+
+Script will:
+	-> print dimensions of matrix
+	-> transpose a matrix
+	-> calc the mean vector of a matrix
+	-> add 2 matrices
+	-> multiple two matrices
+
+Try reading up on when stuck:
+	-> while
+	-> cat
+	-> read
+	-> expr
+	-> cut
+	-> head
+	-> tail
+	-> wc
+	-> sort
+
+
+Required checks:
+	-> given input file is readable, before attempting to read
+		-> aka not a valid matrix (tab delminted table w/ at least 1 element)
+		-> each ele is a signed integer
+		-> every entry is defined
+		-> table is rectangular
+			-> examples:
+					-> empty
+					-> final entry row is followed by a tab char
+					-> empty lines
+					-> any element that is blank or not an int
+		-> print something to stderr and rtn non zero value
+		
+
+			
+
+
+
+
+
+
+
+
