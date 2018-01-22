@@ -62,6 +62,9 @@ Required checks:
 
 			
 
+1) Remove sed from transpose function and fix stuff
+2) add traps
+
 
 
 
