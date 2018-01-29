@@ -758,3 +758,503 @@ chmod +x scriptname    <- should use this one to create the executable, then typ
 
 
 
+Everything is a File  video 6
+--------------------------------------------------------------------------------------
+
+Files:
+	-> inodes with hard links that point to them
+
+Inodes: maintained by the file system istelf and contain:
+			-> pointers to the actual file data
+			-> all meta-information (size, perms, etc..)
+			-> a "reference count": how many hard links point to the inode
+			-> a unique "inode number"
+
+		HardLink1.txt -> INODE
+
+Hard Link:
+	-> text entry in a file system directory that points to an inode
+
+	-> connects a text filename to an inode on disk
+
+Directory:
+	-> essential text files that organize hard links hierarchically
+	-> create and remove
+	-> read contents (in C)
+		-> opendir(), closedir(), readdir(), rewinddir()
+
+
+vim . : will give you a file with the files in that directory
+
+
+Directories can be read like a file: this program looks for the newest timestamped file with a certain prefix
+
+#include <stdio.h>
+#include <string.h>
+#include <dirent.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
+void main() {
+	int newestDirTime = -1; 				// Modified timestamp of newest subdir examined
+	char targetDirPrefix[32] = "brewsteb.rooms."; 						// Prefix we're looking for
+	char newestDirName[256]; 							// Holds the name of the newest dir that contains prefix
+	memset(newestDirName, '\0', sizeof(newestDirName));
+	DIR* dirToCheck; 								// Holds the directory we're starting in
+	struct dirent *fileInDir; 					// Holds the current subdir of the starting dir
+	struct stat dirAttributes; 					// Holds information we've gained about subdir
+	dirToCheck = opendir("."); 					// Open up the directory this program was run in
+	if (dirToCheck > 0) { 						// Make sure the current directory could be opened
+		while ((fileInDir = readdir(dirToCheck)) != NULL) { 				// Check each entry in dir
+		if (strstr(fileInDir->d_name, targetDirPrefix) != NULL) { 			// If entry has prefix
+			printf("Found the prefex: %s\n", fileInDir->d_name);
+			stat(fileInDir->d_name, &dirAttributes); 						// Get attributes of the entry
+			if ((int)dirAttributes.st_mtime > newestDirTime) { 				// If this time is bigger
+				newestDirTime = (int)dirAttributes.st_mtime;
+				memset(newestDirName, '\0', sizeof(newestDirName));
+				strcpy(newestDirName, fileInDir->d_name);
+				printf("Newer subdir: %s, new time: %d\n", fileInDir->d_name, newestDirTime);
+				}
+			}
+		}
+	}
+	closedir(dirToCheck); // Close the directory we opened
+	printf("Newest entry found is: %s\n", newestDirName);
+}
+
+
+Creating Links:
+	-> when you create a file (using touch, a C function, etc..)
+		-> an inode is allocated and a hard link is automatically created
+
+	-> can create multiple hard links to the same inode
+		-> file can appear in multiple directories at the same time
+		-> same file under different names
+			-> even in same dir
+
+	-> to create a link: use ln or link cmds
+
+
+Removing Files in C
+	-> approxly unlinking everything
+		-> inode is garbage collected when ref count == 0
+
+		-> unlink (filename)
+			-> can't unlink dirs
+
+		-> remove (filename)
+			-> can remove empty dirs
+			-> if it is a dir, identical to rmdir()
+
+Symbolic Link
+	-> like Windows shortcut - not actually a file, it pts to a hard link
+
+	-> if you del, rename, or move the hard link a symbolic link points to,
+	the symbolic link becomes unusable
+
+	NewServer$ ln -s /nfs/rack/u2/b/brewsteb ./myFilesLink
+	NewServer$ cd myFilesLink
+
+	SymLink.txt -> HardLink1.txt -> INODE <- HardLink2.txt
+
+
+
+
+
+$ mkdir 1
+$ mkdir 2
+$ touch ./1/hardlink1
+$ ln ./1/hardlink1 ./2/hardlink2
+$ ln -s ./1/hardlink1 ./symlink
+$ find -samefile ./1/hardlink1
+./1/hardlink1  <- these share an inode
+./2/hardlink2
+$ ls -plaR
+.:
+drwxrwx---. 1 brewsteb upg57541 124 Aug 29 15:11 ./
+drwxrwx---. 1 brewsteb upg57541 636 Aug 29 14:56 ../
+drwxrwx---. 1 brewsteb upg57541 84 Aug 29 15:11 1/
+drwxrwx---. 1 brewsteb upg57541 84 Aug 29 15:11 2/
+lrwxrwxrwx. 1 brewsteb upg57541 13 Aug 29 15:11 symlink -> ./1/hardlink1
+./1:
+drwxrwx---. 1 brewsteb upg57541 84 Aug 29 15:11 ./
+drwxrwx---. 1 brewsteb upg57541 124 Aug 29 15:11 ../
+-rw-rw----. 2 brewsteb upg57541 0 Aug 29 15:11 hardlink1       ^  \/ ref count: 2
+./2:
+drwxrwx---. 1 brewsteb upg57541 84 Aug 29 15:11 ./
+drwxrwx---. 1 brewsteb upg57541 124 Aug 29 15:11 ../
+-rw-rw----. 2 brewsteb upg57541 0 Aug 29 15:11 hardlink2
+
+
+
+
+% ls -pla
+drwxr-xr-x 2 brewsteb upg22026 512 Jun 22 16:44 ./
+drwxr-xr-x 8 brewsteb ftp 1024 Jun 22 15:46 ../
+-rw-r--r-- 1 brewsteb upg22026 1027 Jun 22 15:47 cursesDemo.c
+-rw-r--r-- 1 brewsteb upg22026 42558 Jun 22 15:55 Curses.pdf
+-rw-r--r-- 1 brewsteb upg22026 4208 Jun 22 16:24 index.html
+-rw-r--r-- 1 brewsteb upg22026 61554 Jun 22 15:46 IntroToUnixShell.html
+-rw-r--r-- 1 brewsteb upg22026 38 Jun 22 15:46 OnE1FAQ.txt
+-rw------- 1 brewsteb upg22026 467 Jun 22 15:46 OnE1_sol.txt
+-rw-r--r-- 1 brewsteb upg22026 288 Jun 22 15:46 OnE1.txt
+-rw-r--r-- 1 brewsteb upg22026 38 Jun 22 15:55 Prog1FAQ.txt
+-rw-r--r-- 1 brewsteb upg22026 8098 Jun 22 15:46 Prog1.html
+-rw-r--r-- 1 brewsteb upg22026 7114 Jun 22 15:46 Prog1.test
+-rw-r--r-- 1 brewsteb upg22026 38 Jun 22 15:46 Prog2FAQ.txt
+-rw-r--r-- 1 brewsteb upg22026 4517 Jun 22 16:14 Prog2.html
+
+-rw-r--r--  perms
+1      hard link count
+brewsteb     owner
+upg22026  group owner
+4517     size (bytes)
+Jun 22 16:14    last modified
+Prog2.html  name
+
+
+Possibilities include:
+• Hard links
+• Symbolic links
+• Named pipes
+• Device character special file
+• Device block special file
+• Named socket
+
+
+
+Unix perms: 3 classes of users
+	-> user (owner of file)
+	-> group
+	-> all others
+
+	3 kinds of access perms
+		-> read
+		-> write
+		-> execute
+
+
+chmod : change perms on a file by using change mode cmd
+
+
+-rw-r--r-- 1 brewsteb upg22026 4517 Jun 22 16:14 Prog2.html
+drwx--x--x 1 brewsteb upg22026 512 Jun 22 17:48 tempDir/
+
+d    file type
+rwx    user
+--x  group
+--x  others
+1 brewsteb upg22026 512 Jun 22 17:48 tempDir/
+
+traditional way to set is octal
+
+	r = 4
+	w = 2
+	x = 1
+
+	I.e d | rwx  |  r-x  | r-x
+			7		5		5
+
+
+$ chmod 644 Prog2.html   <- standard rights for a publicaly viewable WEBPAGE
+$ chmod 755 tempDir     <- standard rights for a publicaly viewable DIRECTORY
+
+
+Setting perms the easy way:
+
+
+---------- 1 brewsteb upg22026 4517 Jun 22 16:14 Prog2.html
+
+
+
+$ chmod u+rwx Prog2.html
+-rwx------ 1 brewsteb upg22026 4517 Jun 22 16:14 Prog2.html
+
+$ chmod g+rx,o+rwx Prog2.html
+-rwxr-xrwx 1 brewsteb upg22026 4517 Jun 22 16:14 Prog2.html
+
+$ chmod o-w Prog2.html
+-rwxr-xr-x 1 brewsteb upg22026 4517 Jun 22 16:14 Prog2.html
+
+
+
+umask
+	-> creation mask setting defines the default perms for new files
+	-> can set with umask
+
+ex: umask 022
+	-> this is inverted.  It sets the owner to have full perms, while the others don't have write.. opposite of 755
+
+
+
+$ umask
+0007   <-  actually 4 digits, far left = SUID, SGID, and sticky bits (rarely used)
+$ touch tempfile
+$ ls -pla tempfile
+-rw-rw----. 1 brewsteb upg57541 0 Mar 30 08:17 tempfile
+$ rm tempfile
+rm: remove regular empty file ‘tempfile’? y
+$ umask 022
+$ umask
+0022
+$ touch tempfile
+$ ls -pla tempfile
+-rw-r--r--. 1 brewsteb upg57541 0 Mar 30 08:18 tempfile
+
+
+du : returns the total usage in kb of the spec'd dir
+
+df : same, but for entire filesystem
+
+stat : gets metadata about the file
+
+
+touch : creates files and modify time stamps
+
+*** THIS IS A BAD IDEA  ****
+rm -rf /*   <---- deletes all files on computer
+
+
+
+rm -rf ./*  <--- deletes everything in cur dir and beneath.
+
+
+
+VIM Lecture 1.7
+-----------------------------------------------------------
+
+$ - move to end of line
+0 - beginning of line
+
+^d - screen down half a screen
+^u - up half a screen
+
+
+Get into replace mode:
+
+r - replace the char that the cursor is over w/ the next one typed
+R - enter replace mode until we manually leave it
+
+
+/pattern will search for a string pattern in the file
+
+n - move you to the next instance of that pattern
+N - previous instance
+
+:nohl - remove highlighting after search
+
+global search and replace:
+	:%s/wrongtext/righttext/g
+
+
+
+Advanced command mode
+
+:!UNIXCOMMAND
+	-> run single unix cmd from inside vi
+
+:r!UNIXCOMMAND
+	-> run single unix cmd and insert the output into the file
+
+
+:sh -- new shell
+
+cut - use d instead of y
+
+yy - copy current line (opposite of dd)
+
+
+x - del current char
+dw - del cur word
+
+xp - transpose current and next char
+A - go into append/insert mode at the end of the line
+
+
+O (big oh) - open new line above the cur line in insert mode
+o (little o) - below cur line
+
+d$ - del rest of line from where the cursor is
+s - del cur char and enter insert mode
+
+
+5dd - del 5 lines starting at the cur cursor position
+		-> DOH!
+
+
+
+Regular Expressions  video 8
+--------------------------------------------------------------------------------------
+
+
+Used by many unix pgms
+	-> grep, sed, vi, emacs, regexp, etc...
+
+
+used extensively by many scripting langs:
+	-> python, perl, tcl/tk
+
+
+grep - search for an occurance of a string that matches a pattern
+	-> acts like a filter
+
+$ cat fileToSearch
+
+FINDME first line
+second FINDME line
+third line FINDME
+fourth line FINDM3
+fifth line
+sixth lFINDMEine
+
+$ grep "FINDME" fileToSearch
+
+FINDME first line
+second FINDME line
+third line FINDME
+sixth lFINDMEine
+
+
+$ ps -ef | grep brewsteb
+root 29541 3760 0 11:26 ? 00:00:00 sshd: brewsteb [priv]
+brewsteb 29543 29541 0 11:26 ? 00:00:00 sshd: brewsteb@pts/1
+brewsteb 29544 29543 0 11:26 pts/1 00:00:00 -csh
+brewsteb 30737 29544 0 11:44 pts/1 00:00:00 ps -ef
+brewsteb 30738 29544 0 11:44 pts/1 00:00:00 grep brewsteb
+
+
+Jon            Will match any string that contains Jon anywhere
+
+
+
+* - matches 0 or more of the previous char
+	-> not same as cmd line usage
+
+	FINDME*         FINDME or FINDMEE or FINDMEEE…
+
+^ (circumflex)
+	-> when placed at beginning of a RE, indicates the RE must start at the beginning of the string
+^abc          Any string that starts with abc
+
+
+$ (dollar sign)
+	-> when placed at end of RE, matches the end of the string
+
+XYZ$         Any string that ends with XYZ
+
+
+*** if you don't use ^ and $, it will match substrings ***
+
+
+^Ben Brewster$      Any string that matches “Ben Brewster” exactly
+
+
+
+
+.     Matches any single character
+\     Causes the following special character to simply be itself
+			Like the period character itself
+[abc]   Matches any one character inside the brackets
+[^abc]  Matches any character except any of the ones inside
+	-> [^a-z]
+			-> all but anything a through z
+
+
+
+
+Find all lines in all files that match a string:
+
+r - search recursively down into each subdir
+n - rtn line # of maching lines
+~ - look everywhere from my home dir and deeper
+
+$ grep -rn "dogsdogs" ~  
+/nfs/stak/faculty/b/brewsteb/tempdir/greptests/catsdogs:4:i like dogsdogs
+
+
+
+Finding things - find  - EX 1
+	-> find a file by name and many other features
+	-> can also exe cmds against the files found
+
+find all files named digs starting at my home dir (recursion into dirs is implied):
+
+$ find ~ -name digs
+/nfs/stak/faculty/b/brewsteb/tempdir/greptests/digs
+
+
+
+$ find ~ -name digs 2>/dev/null
+	-> will take any errors and put them into a "black hole"
+
+
+
+
+Ex 2:
+
+$ find ~ -name digs -exec rm -i '{}' \;
+rm: remove regular empty file
+'/nfs/stak/faculty/b/brewsteb/tempdir/greptests/digs'? y
+
+
+find all files named digs starting in home dir   $ find ~ -name digs
+	-> exe the rm -i cmd    -exec rm -i
+		-> against all files found by find   '{}'
+			-> end the rm command   \;
+
+
+Ex 3: find all with a specific thing in the name
+
+$ find ~ -regex ".*fork.*" | sort
+/nfs/stak/faculty/b/brewsteb/tempdir/doublefork
+/nfs/stak/faculty/b/brewsteb/tempdir/doublefork.c
+/nfs/stak/faculty/b/brewsteb/tempdir/forkexec
+/nfs/stak/faculty/b/brewsteb/tempdir/forkexec.c
+/nfs/stak/faculty/b/brewsteb/tempdir/forkFPsharing
+/nfs/stak/faculty/b/brewsteb/tempdir/forkFPsharing.c
+/nfs/stak/faculty/b/brewsteb/tempdir/forktest
+/nfs/stak/faculty/b/brewsteb/tempdir/forktest.c
+/nfs/stak/faculty/b/brewsteb/tempdir/forkwaittest
+/nfs/stak/faculty/b/brewsteb/tempdir/forkwaittest.c
+/nfs/stak/faculty/b/brewsteb/tempdir/forkyouzombie
+/nfs/stak/faculty/b/brewsteb/tempdir/forkyouzombie.c
+/nfs/stak/faculty/b/brewsteb/tempdir/pipeNfork
+/nfs/stak/faculty/b/brewsteb/tempdir/pipeNfork.c
+/nfs/stak/faculty/b/brewsteb/tempdir/pipeNfork_directEdit.c
+/nfs/stak/faculty/b/brewsteb/tempdir/pipeNforkFIFO
+/nfs/stak/faculty/b/brewsteb/tempdir/pipeNforkFIFO.c
+
+
+
+
+Finding things - locate
+	-> finds files using a db
+	-> faster
+	-> will be outdated and not avail on every system
+
+		-> find is better
+
+
+
+		
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
