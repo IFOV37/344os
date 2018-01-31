@@ -1241,6 +1241,225 @@ Finding things - locate
 
 
 
+Block 2
+======================================================================================
+
+A Brief Review of C  video 1
+--------------------------------------------------------------------------------------
+
+C = high level lang
+	-> not low level like assembly
+
+O.G. version of C (C89)
+	-> 32 reserved keywords
+	-> 50+ ops and syntax chars
+
+
+#include <stdio.h>
+
+int main()
+{
+	printf("Hellow world\n");
+	return 0;
+}
+
+
+or
+
+int main()
+{
+	char* oblig = "Hello World";
+	float itsOver = 9000.0f;
+	printf("%s\n", oblig);
+	printf("IT\'S OVER %.2f!\n", itsOver);
+
+	return 0;
+}
+
+
+#include <string.h>
+
+char* boring = "boring"
+	-> string literal, can't change
+		-> pretty sure this is because we are pointing to a specific block of memory
+			and we can't change because that would change the memory allocated (such as overwriting)
+		-> so, we would just point to a different string
+
+
+length = strlen(weirdString);
+
+
+string compare:
+
+if (strcmp(str1, str2) == 0)
+	equal
+else
+	not
+
+
+
+char a[1000], b[1000]
+
+gets(a);   < funtion sig: char * gets(char *str)
+
+gets(b);
+
+
+strcat(a, b);  strcat() dumps the results into a and returns the same
+	-> so a is updated
+	-> could overwrite stuff as it doesn't check the space allocated for a
+
+
+substrings aren't built in:
+
+while (c < length)
+{
+	sub[c] = string[position + c - 1];
+	c++;
+}
+sub[c] = '\0';   // null terminator
+
+
+char mychar;
+mychar = 'C';
+char* mypointer;
+mypointer = &mychar;
+char* mypointer2 = mypointer;
+mypointer2 = &mychar2;
+*mypointer2 = *mypointer;
+
+
+
+From Programs to Execution  video 2
+--------------------------------------------------------------------------------------
+
+
+OS provides software access to the hardware in an abstracted manner
+
+
+Memory = array of bytes
+	-> this is a bunch of stuff from 271.. think back on that.. simple stuff but should remember.
+
+
+Virtual Memory: hardware creates the illusion of:
+	-> un-shared, exclusive memory
+	-> unlimited memory (up to the max address size)
+
+
+Typical organizatoin of program in memory:
+	-> code segment - pgm instructions
+
+	-> data segment - ini'd global and static vars in read/write and read-only sections
+						-----------------------------------------------------------------
+						un-ini'd g and s vars
+
+	-> stack - automatic vars, fn rtn ptrs
+
+	-> heap - dynamically allocated memory
+
+
+
+stack
+---------
+local auto vars and fn rtn pts and pgm enters and exits scoped blocks of code
+
+memory managed efficiently by CPU
+
+Var size is limited by OS settings
+
+Vars cannot be resized
+
+
+
+heap
+--------------
+
+vars allocated manually: malloc(), calloc()
+
+mem is unmanaged, so fragmentation can occur
+	-> heap access is slower than stack
+
+var size is unlimited (other than virtual mem lims)
+
+vars can be resized with realloc()
+
+
+
+compile / link process
+
+	1) c pre-processor expands macros and strips out comments
+		#include, #define, #ifdef, //, /* */, etc..
+
+	2) compiler parses your source, chks for errors, and gens assembly code
+
+	3) compiler calls the assembler, which converts assembly code to machine binary code.
+
+	4) if compiling an exe, the linker step tries to match function calls to function code (in diff files)
+
+
+GCC - standard unix compiler
+
+
+-g 			compile w/ debugging for gdb
+-c 			compile only w/o linking
+-S 			generates assembly code
+-O3 		optimizes as much as possible
+-o 			specifies the name of the output file
+-Wall 		turns on all warnings
+-llibrary	adds support for library (library) when linking (for example, -lpthread)
+
+
+personal note: Just create a makefile to use
+
+
+compiling an exe:
+
+	1 source .c file:
+		gcc -o dbtest dbtest.c
+
+	multiple files: (simpler method)
+		gcc -o dbtest dbtest.c dbcreate.c dbopen.c
+
+
+	separate compile and link: (more efficient)
+		-> compile them one at a time w/o linking, then linke them all together at the end
+
+		1)	gcc -c dbtest.c
+			gcc -c dbcreate.c
+			gcc -c dbopen.c
+			gcc -c dbread.c
+
+		2) link all object (.o) files together and create an exe
+			gcc -o dbtest dbtest.o dbcreate.o dbopen.o
+
+
+Library Archives:
+
+	collections of .o files gathered into a single large file, with indexes to make accessing them faster
+		-> usually faster than having to read every .o file
+		-> easier to link w/ if you aren't changing the library object files frequenetly
+
+
+	to create a library
+		-> first create all the object files
+		-> then use the ar command:
+			ar -r libdb.a dbcreate.o dbopen.o dbread.o
+
+			To use:
+					gcc -o dbest dbtest.o libdb.a
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
