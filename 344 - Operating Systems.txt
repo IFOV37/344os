@@ -1452,6 +1452,246 @@ Library Archives:
 
 
 
+Concurrency   video 3
+--------------------------------------------------------------------------------------
+
+-> doing multiple things at the same time
+	-> pgm decomp into order-indpendednt chunks
+
+-> easy on unix
+	-> multiple process can be running simultaneously
+	-> mult copies of same pgm
+	-> cpu time split and shared
+
+
+Defs: system call vs library functions
+
+system calls:
+	-> a request for service that causes the normal operation of a process to be interrupted and control passes to the OS
+
+	-> typically, the process is now blocked and won't do anything else until the system call returns
+
+	-> read(), write(), etc..
+
+C lib funs:
+	-> faster, as they have no perms or blocking issues
+	-> sqrt(), printf(), etc.
+
+
+Illusions of simul exec:
+	
+	-> multiprogramming
+		-> more than one process ready to exec
+		-> sys calls trigger "context switches", to let next proc run
+		-> proc not exe again until its system call returns
+
+
+	-> timesharing
+		-> cput time split b/w multiple processes
+			-> gives illusion that many procs are running at once
+
+
+multiprocessing:
+	-> exe mult procs at actual same time
+		- multi cores!
+
+
+
+Provide Access Control:
+	-> if 1 proc writing, no other prcs should access (read or write) the resource
+
+	-> "locks" solve these problems
+		-> only procs owning the lock may access r/w the resource
+		-> many ways to do
+		-> usually reqs support from the OS
+
+
+Kernel:
+	-> central part of OS
+	-> manages hardware (and drivers)
+	-> provides the scheduler
+	-> not interacted w/ by users: system calls are requests to the kernel
+
+Scheduler
+	-> distributes prioritized and/or fair CPU time
+
+
+Imagine we have a chat server that needs to do 3 things:
+	1) watch for users connecting
+	2) send chat output to all users
+	3) receive chat input from individual users
+
+	What do we do?
+
+		Threads - allows a proc to do all of these things at the same time
+
+			Advs:
+					comm b/w threads is vastly simpler than ipc
+						-> share code, heap, data, can access other stacks
+
+					cpu switches b/w exe threads much faster than between procs
+
+			disAdv:
+
+					race conditions
+
+					resource contention, including file access
+
+					leaking of sensitive data cross threads
+
+
+	Posix thread - unix:
+
+	#include <pthread.h>
+		-> compile with -lpthread option in gcc
+
+Creating a thread:
+
+int pthread_create(		pthread_t* thread,
+						const pthread_attr_t* attr,
+						void* (*start_routine) (void *),
+						void* arg
+				  );
+
+
+thread: pts to the var in which the ID of the new thread is written into
+	-> depending on OS implementation, somtimes this is an int, somtimes struct
+
+attr: pts to a pthread_attr_t struct that contains option flags (NULL if none)
+
+start_routine: pts to a fn (in current pgm) that will be the start pt of execution for the new thread that copies this one
+
+arg: pts to the sole arg that is passed into start_routine (null if none); if multiple args are desired, pass a struct
+
+
+Example:
+
+int resultInt;
+pthread_t myThreadID;
+
+restultInt = pthread_create( &myThread,
+			NULL,
+			start_routine,
+			NULL );
+
+
+Destroy a thread:
+	-> calling pthread_exit()
+	-> rtns from start_routine()
+	-> from another thread calling pthread_cancel()
+	-> exit() from any thread
+
+
+
+identifying the executing thread:
+
+pthread_t myThreadID = pthread_self();   (not necessarily an int)
+
+test for equality:
+
+pthread_equal(myThreadID, unknownThreadID);
+
+
+
+in for loop:
+	result_code = pthread_join(threads[index], NULL);
+		-> block until thread 'index' completes
+
+
+
+If lectures don't do more, look up some info on threading:
+pthread library, pthread_create, join
+also review voided fns and fn ptrs
+
+
+Mutexes  (mutual exclusion)
+	-> implemented as part of the POSIX pthread api to privde thread synchronization via "locks"
+	-> provides the prgmmr the ability to protect data from multiple read/writes on same files
+	-> several types which check variously for errors, perform faster, etc..
+
+
+Lifespan of a mutex:
+
+pthread_mutex_t myMutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_destroy(myMutex);
+
+
+Mutex locking:
+	-> thread acquires a lock on a mutex var by attempting to call a special lock fn:
+
+		pthread_mutex_t myMutex = PTHREAD_MUTEX_INITIALIZER;
+		pthread_mutex_lock(myMutex);
+
+			-> once mutex is locked, any other thread attempting to lock it will block
+
+
+	unlocking:
+		-> thread unlocks a mutex var that it has previously locked:
+			pthread_mutex_unlock(myMutex);
+
+		-> once locked, 1 of other block threads (chosen essentially randomly) currenlty blocked on the mutex will unblock and gain the lock
+
+		-> non-blocking attempt to lock the mutex:
+			int resultCode = pthread_mutex_trylock(myMutex);
+
+
+Mutex Generalized:
+	Mutex = form of a semaphore which come in 2 types:
+		-> counting semaphore
+			-> allow some soft of arbitrary resource count, e.g. # of avail buffers
+		-> binary semaphore
+			-> equal to 1 or 0, indicating locked/unavailable or unlocked/available
+	-> invented by Edsger Dijkstra in the early 1960s
+
+
+
+
+
+
+
+File Access in C  video 4
+--------------------------------------------------------------------------------------
+
+What is a file in unix?
+	-> stream of bytes
+
+
+opening a file:
+
+read only :: O_RDONLY
+write only :: O_WRONLY
+read and write :: :: O_RDWR
+
+
+file pointer (default start pos = 0)
+
+
+char file[] = "cs344/grades.txt";
+int file_descriptor;
+// fopen and fclose are for file streams rather than file descriptors
+
+file_descriptor = open(file, O_RDONLY);
+
+if (file_descriptor < 0)
+	fprintf(stderr, "could not open %s\n", file);
+	exit(1);
+
+close (file_descriptor);
+return 0;
+
+
+
+truncating an existing file:
+
+	file_descriptor = open(file, O_WRONLY | O_TRUNC);
+
+
+O_APPEND = appending flag (set to end of file)
+
+
+create a new file:
+
+
 
 
 
