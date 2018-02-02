@@ -1690,6 +1690,172 @@ O_APPEND = appending flag (set to end of file)
 
 
 create a new file:
+	file_descripter = open(filepath, O_WRONLY | O_CREAT, 0600);
+		-> 0600 = permissions. don't pass in, C will fail in bizarre and silent ways
+
+	octal number perms:
+		-> specify directly as with chmod: 0600
+		-> bit-wise OR flags together: S_IRUSR | S_IWUSR
+
+
+lseek()
+	-> manipulates file ptr in a file
+	-> used to ctrl where you're messing with "da bitz"
+
+	move to byte #16:
+		newpos = lseek(file_d, 16, SEEK_SET);
+			-> SEEK_END based on end pos
+			-> SEEK_CUR from current pos
+
+read():
+	read(fd, &buffer, 10)	
+	buffer: #!/bin/bas
+	(file stream of bytes = "#!/bin/bash\n ")
+
+
+Good practice to avoid nasty bugs:
+	nwritten = write(file_d, giveEm, strlen(giveEm) * sizeof(char));
+	
+	mmemset(readBuffer, '\0',  sizeof(readBuffer)); // clear out array b4 using
+	lseek(file_d, 0, SEEK_SET); //reset the file ptr to beginning of file
+	nread = read(file_d, readBuffer, sizeof(readbuffer)); 
+
+
+
+stdio.h:
+
+fopen, fclose, printf, fprintf, scanf, fscanf, getc, putc, gets, fgets.. etc..
+	-> auto buffers input/output
+	-> easy to work in line mode r/w 1 line at a time
+	-> powerful string and number formatting
+
+	Why teach and use read() and write() ?
+		-> max performance when you know exactly what you are doing
+
+
+Files or Streams
+	stdin, stdout, and stderr are file streams, not file system files
+		-> f streams wrap around and provide buffering to the underlying file descriptor among other features
+		-> stdio lib streams are connected with fopen() call to a var type FILE*
+			FILE* myFile = fopen("datafile1", "r");
+		-> streams closed when process terminates
+		-> raw file d's w/ open files are passed on to child processes:
+			-> process spawns a new child proc w/ fork(), all open files are shared b/w parent and child procs
+
+
+stat() and fstat()
+	-> get info about a file or dir
+
+
+
+Strings in C  video 5
+--------------------------------------------------------------------------------------
+not a native type and ends in \0
+
+printf()  -  prints to stdout
+sprintf() -  prints to string (a char array)
+fprintf() -  p to file
+						-> all look for null terms
+
+
+common lib fns:
+	strcmp()
+	strlen()
+	strcpy()
+	strcat()
+
+	n-char versions:
+		strncpy
+		strncat
+
+
+1) char* mystring 		= "mystring";
+	-> at compile time creates a sequ of bytes in the READ ONLY INITIALIZED DATA SEGMENT portion of memory w/ the contents of "mystring"
+	-> during exe, creates ptr on stack called mystring that pts to read only seq of chars
+	-> can be ptded to by other addresses
+
+2) char  mystring[]		= "my string";
+	-> creates space for 10 bytes on the stack
+	-> puts "my string" into the var mystring with null term after it
+	-> editable as an array
+
+3) char  mystring[20]	= "my string";
+	-> creates space for 20 bytes on stack
+	-> "my string" into mystring w/ null term
+	-> editable as array
+
+
+Watch out for buffer overruns when writing strings.
+
+
+DONT:
+char mystring[20];
+strcpy(mystring, "my string");
+
+Better, but not safe:
+char mystring[20] = "my string";   // may not be portable
+
+Preferred:
+char mystring[20];
+memset(mystring, '\0', 20);
+strcpy(mystring, "my string");
+
+
+Declaration:
+
+char* mystring[3];			// array of pts each which pt to a string
+		-> remember, array name is a ptr to first elements address
+
+note: interesting way to find length:
+	sizeof(mystring) / sizeof(mystring[0])
+
+
+dyanmically allocating a string:
+malloc() and free()
+
+char* mystring;
+
+mystring = mallow(20 * sizeof(char));
+
+code...
+
+free(mystring);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

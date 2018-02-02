@@ -1,0 +1,24 @@
+Program 2 Outline/notes
+
+
+2 C programs (no other langs allowed)
+	1st pgm) rooms program - contained in <STUDENT ONID USERNAME>.buildrooms.c
+			-> creates a series of files that hold descriptions of the in-game rooms and how they are connected
+
+	2nd pgm) game   -   called <STUDENT ONID USERNAME>.adventure.c
+			-> provides an interface for playnig the game using the most recently generated rooms
+
+			-> player will begin in "starting room"
+				-> player will win game automatically upon entering "ending room"
+					-> causes exit and displays path taken by player
+
+			-> during game, player can also enter a cmd that rtns the current time - functionality utilizes mutexes and multithreading
+
+	USE raw C (C89), not C99
+
+
+	Rooms Program:
+	
+
+
+
