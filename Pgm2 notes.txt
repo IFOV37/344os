@@ -18,7 +18,74 @@ Program 2 Outline/notes
 
 
 	Rooms Program:
-	
+		-> must generate 7 different room files
+			-> 1 room per file
+			-> in directory: <STUDENT ONID USERNAME>.rooms.<PROCESS ID>
+			-> I get to name these and they are hard coded into the pgm
+				Ex: smithj.rooms.19903 (process ID not hardcoded)
+
+		Each Room has:
+			-> Room name
+				-> max 8 chars (no #s, special chars, or spaces)
+				-> need at least 10 room names in pgm
+					-> rooms pgm randomly assign 1 of these to each room generated
+					-> any given run will use 7 of the 10 hardcoded names
+						-> rOne, rTwo, rThree, rFour, rFive, etc..
+			-> at least 3 outgoing connections (at most 6)
+				-> # of cons must be random from this room to other rooms
+				-> if A to B, then B must also be to A (1 con each)
+				-> room can't connect to itself or to another room more than once
+			-> room type
+
+			Each file must have this format:
+				ROOM NAME: <room name>x.
+				CONNECTION 1: <room name>
+				…
+				ROOM TYPE: <room type>
+
+					Possible room types: START_ROOM, END_ROOM, MID_ROOM
+						-> random, only 1 gets start, and 1 gets end
+
+				Recommended building room graph method:
+					add conns 2 at a time (forw and back) to randomly chosen room endpts, until the graph satisfies the requirements
+
+
+		1) make the directory with the process ID     --- done
+		2) create the structs for the 7 rooms that will be used
+			-> this should be done randomly such that any 7 of the 10 could be used  -- r 7 done
+			-> assign first chosen START, last chosen END, all others mid  -- done via r 7
+			-> create a global struct array of 7 rooms
+				-> go through and add connections in pairs (randomly) until we get the right stuff
+		3) build the graph of rooms (connections)
+		4) write each room struct to a different file
+
+
+				113, 132, 
+
+	Games Program:
+
+
+
+
+
+
+void createRooms(room roomsArray, char* roomsAvail)
+void AddRandomConnection()
+room GetRandomRoom()
+int CanAddConnectionFrom (room x)
+int ConnectionAlreadyExists(x, y)
+void ConnectRoom(room x, room y)
+int IsSameRoom(room x, room y)
+
+
+ 28 struct room
+ 29 {
+ 30         int id;
+ 31         char* name;
+ 32         char* type;
+ 33         int numOutConns;
+ 34         struct room* outConns[MAX_CONNS];
+ 35 };
 
 
 
