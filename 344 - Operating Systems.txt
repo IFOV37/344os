@@ -1826,6 +1826,123 @@ free(mystring);
 
 
 
+C Debugging  video 6
+--------------------------------------------------------------------------------------
+
+To reproduce:
+	simplifiy input and env until replicated at will
+		-> Wolf Fence algo (50% cuts)
+
+Debugger with gcc
+
+	compile with the "-g" optoin:
+		gcc -g testit.c -o testit
+		then start debugger on pgm:
+			gdb ./testit
+
+	impt cmds in debugger
+
+		run :: (re)starts pgm running - will stop at brkpt
+		break :: sets brkpt 
+		step :: executes single line of code, will enter a fn call
+		next :: exe single line of code, not enter fn call
+		continue :: continues exe again untl brkpt or end pgm
+		print :: pritns out a var
+		quit :: stop debugging (exit gdb)
+
+
+valgrind:
+	gcc -o leaky -g leaky.c
+	valgrind --leak-check=yes --show-reachable=yes ./leaky
+
+	-> printf could cause valgrind to lie about reachable/unreachable allocated memory
+
+
+
+Mixing Languages  video 7
+--------------------------------------------------------------------------------------
+
+Another always built in language for scripting: awk
+
+awk:
+	-> commonly used for writing one line pgms on unix systems
+
+	Ex:
+		#!/usr/bin/awk -f
+		BEGIN {print "Hello, world!"; exit }
+
+	associative arrays
+		-> maps arbitrary objs to arbitrary objs
+				-> as opposed to numbers to arb objs
+
+		ex:
+			myarray[0] = "dog"
+			myarray["cat"] = "feline"
+			myarray[3] = 6
+
+			sparse array b/c there are breaks in the int numbering from 0 to 3
+
+			associ arrays are also called: map, hash, lookup table
+
+
+Perl: practical extraction and report language (general purpose lang)
+	-> borrows from C, shell scripting, awk, sed, Lisp, and others
+	-> easy, but not elegant
+	-> interpreted
+
+	ex:
+
+		#!/usr/bin/perl
+		# the traditional first pgm.
+
+		# strict and warnings are recommended
+		use strict;
+		use warnings;
+
+		# print msg
+		print "Hello, World!\n";
+
+Python: faster and OOP support
+	-> interpreted
+
+	ex:
+		#!/usr/bin/python
+		print "Hello World!";
+
+		#!/usr/bin/python
+		# Create a file for writing
+		file = open("myfile.dat", "w+")
+		file.write("STUFF N JUNK")
+
+
+C is much faster than Python
+
+to see time:
+	/usr/bin/time --format='%C %e seconds' pgmNameHere
+
+
+scripting langs and compiled langs can call each other
+	-> allows us to combine the best parts of one with the other:
+		speed == c
+		short and easy to pgm == python
+
+Mixing C into Python (doesn't return any results back to the python script)
+
+	#!/usr/bin/python
+	from subprocess import call
+	call("./c-billion")
+
+ways to get data back into python:
+		(should be able to do 1st 2 after this course)
+	-> have c pgm write a data file, read by python
+	-> create a UNIX pipe, from which both python and C can read and write
+	-> crate a C fn inside the Python pgm with the "instant" module
+	-> several other complex ways such as Python C API, ctypes, SWIG, Boost python api, etc.. all which
+		use additional wrappers or APIs to manipulate and translate data.
+
+Can also mix python into C (strings!)
+
+Add the mixing C into bash shell scripting here
 
 
 
