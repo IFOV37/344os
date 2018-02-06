@@ -1645,6 +1645,15 @@ Mutex Generalized:
 
 
 
+Brewster's delightful imagery on the topic:
+
+A mutex is not the actual object in question. I think you get that, but let me extend the fridge analogy a bit. Imagine that the mutex is a squirrel. By convention, we're going to agree that only the person holding the squirrel is allowed to use the fridge.
+
+ So, person A comes along, picks up the squirrel, then uses the fridge. While she is in the fridge, person B comes along. NOTHING is stopping person B from getting into the fridge while person A is using it, except we've agreed to use the convention of the squirrel holder. So, person B attempts to get the squirrel but is rebuffed by person A. Person B now is stuck: he's not doing anything else but asking for the squirrel. Constantly. Annoyingly.
+
+As soon as person A puts down the squirrel (unlocks the mutex) - whether or not she is done with the fridge, so be careful to get the timing of these events correct - person B grabs it (locks the mutex), and then immediately starts accessing the fridge.
+ 
+Now let's imagine that Persons C, D, and E arrive, and they all try to grab the squirrel from Person B (they all call lock on the mutex). Person B fights them off (it's already locked), but they all stay right next to him, doing nothing, just trying to grab the squirrel (they're blocked). Here's an important point: as soon as Person B puts down the squirrel, there's a free-for-all fight for it. It will be essentially random as to whom between Persons C, D, and E get the squirrel! Picture three people fighting over a docile woodland animal in a cramped kitchen with a well-stocked fridge and you'll have the perfect mental model of the use of a mutex.
 
 
 
@@ -1942,7 +1951,31 @@ ways to get data back into python:
 
 Can also mix python into C (strings!)
 
-Add the mixing C into bash shell scripting here
+mixing C into bash Shell Scripting:
+
+cat addsix-c.c
+#include <stdio.h>
+int main(int argc, char*argv[])
+{
+	printf("%d", atoi(argv[1]) + 6);
+	return 0;
+}
+
+gcc -o addsix-c addsix-c.c
+
+#!/bin/bash
+value=4
+printf "value: %d\n" $value
+value=$(./addsix-c $value)
+printf "value + addsix: %d \n" $value
+
+chmod +x addsix-bash
+addsix-bash
+
+value: 4
+value + addsix: 10
+
+
 
 
 
