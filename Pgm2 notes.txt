@@ -62,9 +62,6 @@ Program 2 Outline/notes
 
 				113, 132, 
 
-	Games Program:
-
-
 
 118 /* setup the directory with a new process ID */
 119 void directorySetup(char targetDir[])
@@ -100,6 +97,77 @@ int IsSameRoom(room x, room y)
  33         int numOutConns;
  34         struct room* outConns[MAX_CONNS];
  35 };
+
+
+
+
+
+	Games Program:
+		Must present an interface to the player.
+			-> room data needs to be read back into the program from the previously generated room files
+				-> this part needs get the most recently created files via a stat() fn call on the room directory.
+				-> open the 1 w/ most recent st_mtime component of the stat struct
+
+			Must show whr player is, possible conns, and a prompt:
+				CURRENT LOCATION: XYZZY
+				POSSIBLE CONNECTIONS: PLOVER, Dungeon, twisty.
+				WHERE TO? >| <- cursor should be here
+
+				user types in exact name and hits return:
+					CURRENT LOCATION: XYZZY
+					POSSIBLE CONNECTIONS: PLOVER, Dungeon, twisty.
+					WHERE TO? >twisty
+
+					CURRENT LOCATION: twisty
+					POSSIBLE CONNECTIONS: PLOVER, XYZZY, Dungeon, PLUGH.
+					WHERE TO? >
+
+			if user types invalid room name (case matters!), it should return an error:
+					CURRENT LOCATION: XYZZY
+					POSSIBLE CONNECTIONS: PLOVER, Dungeon, twisty.
+					WHERE TO? >Twisty
+
+					HUH? I DON’T UNDERSTAND THAT ROOM. TRY AGAIN.
+
+					CURRENT LOCATION: XYZZY
+					POSSIBLE CONNECTIONS: PLOVER, Dungeon, twisty.
+					WHERE TO? >
+
+					-> this doesn't increment the path history or the step count
+
+			Once reaching the End Room, the game should indicate that it has been reached.
+				-> print out the path the user took to get there and the # of steps taken (not # of rooms visited), a congrats msg, and then exit.
+					-> WE NEED TO KEEP TRACK OF PATH HISTORY!
+
+				-> when pgm exits, set the exit status code to 0, leaave the rooms directory in place to be examined.
+
+
+				1) global array of room structs to in and store rooms
+					a) find latest directory
+						i) use prefix: "username.rooms."
+							-> need things to hold latest time and the new directory (full)
+					b) 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
