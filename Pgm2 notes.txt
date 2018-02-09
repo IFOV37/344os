@@ -38,7 +38,7 @@ Program 2 Outline/notes
 			-> room type
 
 			Each file must have this format:
-				ROOM NAME: <room name>x.
+				ROOM NAME: <room name>
 				CONNECTION 1: <room name>
 				…
 				ROOM TYPE: <room type>
@@ -158,6 +158,10 @@ int IsSameRoom(room x, room y)
 
 
 
+
+286                 sprintf(filePathAndName, "%s/%s", targetDir, roomsArray[i].name);
+287                 filePtr = fopen(filePathAndName, "w");
+288                 fprintf(filePtr, "ROOM NAME: %s\n", roomsArray[i].name);
 
 
 
