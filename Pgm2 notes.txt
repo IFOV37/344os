@@ -154,7 +154,10 @@ int IsSameRoom(room x, room y)
 
 
 
-
+//https://stackoverflow.com/questions/2693776/removing-trailing-newline-character-from-fgets-input//
+        // Removing trailing new line in user input
+        if(( pos = strchr (userInput, '\n')) != NULL)
+            *pos = '\0';
 
 
 
@@ -164,6 +167,64 @@ int IsSameRoom(room x, room y)
 288                 fprintf(filePtr, "ROOM NAME: %s\n", roomsArray[i].name);
 
 
+			********** NOTE THAT THE PROGRAM NEEDS TO USE EXIT STATUS CODE 0   ***************
+				-> still need to do this
+
+
+
+
+
+	Time Keeping:
+
+			Game program must be able to return the current time of day by utilizing a second thread and mutex(es).
+				-> use classic pthread library for simple multithreading
+						-> requires the -lpthread compile option w/ gcc
+
+			When player types: time
+				-> and hits enter
+
+				a 2nd thread must write the current time in the format:
+						1:03pm, Tuesday, September 13, 2016
+
+					-> use strftime() for the formatting ***
+
+					Example:
+						CURRENT LOCATION: XYZZY
+						POSSIBLE CONNECTIONS: PLOVER, Dungeon, twisty.
+						WHERE TO? >time
+
+						 1:03pm, Tuesday, September 13, 2016
+
+						 HH:MMPM, Day of week, Month, DD, YYYY
+						 %I:%M, %A, %B, %e, %Y
+
+						WHERE TO? >
+
+				written to a file named:  currentTime.txt
+					-> located in the same directory as the game
+					-> main thread will then read this time value from the file and print it out to the user
+						w/ the next prompt on the next line
+
+						-> recommended to keep the 2nd thread running during the execution of main pgm
+							then wake it up as needed via this "time" command
+							-> at least 1 mutex must be sued to control exe b/w 2 threads
+
+				key points to know if using correctly:
+					-> they're only useful if .. lock() is being called in multiple threads
+						(i.e. having the only lock() and unlock() calls occur in one thread isn't using the mutex for control)
+
+					-> mutexes allow threads to jockey for contention by having multiple locks (attempt to be established)
+						so, perhaps the main thread locks a mutex, then spawns the 2nd thread (whose 1st action is to attempt
+						to gain control of the mutex by calling lock(), which blocks the 2nd thread).
+							-> how is the 2nd thread started up agian?
+								-> by the 1st thread calling unlock()
+
+					-> a thread can be told to wait for another to complete with the join() function,
+						resuming execution when the other thread finally terminates
+
+
+				time command does NOT increase step count or path history
+					-> don't delete currentTime.txt file
 
 
 
