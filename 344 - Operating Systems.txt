@@ -1978,43 +1978,488 @@ value + addsix: 10
 
 
 
+Block 3
+======================================================================================
+
+Processes   video 1
+--------------------------------------------------------------------------------------
+
+Process mgmt = necessary component of a multiprogrammable OS
+
+Process: an instance of an executing pgm, w/ a collection of execution resources associated with it.
+
+UNIX Process comps:
+	-> unique identity (process id aka pid): pid_t pid = getpid();
+	-> virtual address space (from 0 to mem lim)
+	-> pgm code and data in mem
+	-> user/grp identity
+	-> exec environment all to itself
+	-> resource lims, scheduling priority
+	-> etc..
+
+Program: exec code
+process: running an instance of a pgm
+	-> more than 1 proc concurrently exec same pgm code w/ sep proc resources
+
+
+Process States:
+
+Running (on cpu)
+Waiting: for I/O, timer alarm, or signal - also known as blocked
+Runable: waiting for cpu.
+
+Zombie: exited, waiting for parent to clean it up
+
+
+How do you create a proc?
+	-> let the shell do it for you (when exec a pgm)
+	-> in some cases, you'll want to do it yourself (shell assignment)
+	-> unix provides a C API for creating and managing procs explicitly
+
+
+	Fns in api we will cover:
+		i)		fork()
+		ii) 	exec() family:
+					-> execl()
+					-> execlp()
+					-> execv()
+					-> execvp()
+		iii) 	exit()
+		iv)		wait(), waitpid()
+		v)		getpid()
+		vi)		getenv(), putenv()
 
 
 
+fork() : starts a new process
+	-> clones proc A into B (nearly identical)
+		-> diff pid's
+		-> each returns a diff val from fork()
+		-> P B gets cpies of all open file descriptors of Proc A
+		-> has same vars set to same vals, but now separately managed
+
+$ cat forktest.c
+
+#include <sys/types.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+void main()
+{
+	pid_t spawnpid = -5;
+	int ten = 10;
+
+	spawnpid = fork();
+	switch (spawnpid)
+	{
+		case -1:   /* returns -1 if something went wrong - to the parent proc - sets global var errno */
+			perror("Hull Breach!");
+			exit(1);
+			break;
+		case 0: 	/* in child proc, fork rtns 0 */
+			ten = ten + 1;
+			printf("I am the child! ten = %d\n", ten);
+			break;
+		default:	/* in parent proc, fork rtns proc id of child proc created */
+			ten = ten - 1;
+			printf("I am the parent! ten = %d\n", ten);
+			break;
+	}
+	printf("This will be executed by both of us!\n");
+}
+
+Key items inherited:
+	-> pgm code
+	-> creds
+	-> vm contents (incld stack/heap)
+	-> open file descriptors
+	-> close on exec flags
+	-> signal handling settings
+	-> etc..
+
+
+Key items UNIQUE to the child proc:
+	-> proc id
+	-> parent proc id is diff (it's the parent that just spawned it)
+	-> own copy of file d's
+	-> process, text, data, and other mem locks are NOT inherited
+	-> pending signals init'd to the empty set
+
+Child proc termination:
+	-> exits for 2 reasons
+		1) completes exec and exits normally
+			case 1) child proc completed the needful (haha) and exited w/ sucessful exit status 			of 0
+			case 2) child p encountered error cond, recognized it, and exited with non-S exit 				status (non 0)
+
+		2) it was killed by a signal
+			-> child p was sent a signal that by default terms a process and the child proc did not catch it
+
+	How do parents check to see if child p's have terminated? 	(checking exit status)
+			-> both fns, you pass a ptr to which the OS writes an int, which identifies how the child exited
+				-> not a simple integer that can be easily read
+
+		wait() : will block - until any one child proc termiantes; rtns the proc id of the term'd child
+				pid_t wait(int *childExitMethod);
+
+
+		waitpid() : same as wait, but with the specified proc ID being term'd
+			-> can pass special flag to not block (no hang)
+				pid_t waitpid(pid_t pid,
+							  int *childExitMethod,
+							  int options);
+
+		Examples:
+
+			block this parent until any child proc terms:
+				childPID = wait(&childExitMethod);
+
+			block this parent until the spec'd child proc terms:
+				childPID_actual = waitpid(childPID_intent, &childExitMethod, 0);
+
+			check if any process has completed, rtn immediately w/ 0 if none have:
+				childPID = waitpid(-1, &childExitMethod, WNOHANG);
+
+			chk if the proc spec'd has completed, rtn immediately w/ 0 if it hasn't:
+				childPID_actual = waitpid(childPID_intent, &childExitMethod, WNOHANG);
+
+
+		proper waitpid() placement:
+
+		$ cat forkwaittest.c
+
+		#include <sys/types.h>
+		#include <unistd.h>
+		#include <stdio.h>
+		#include <stdlib.h>
+
+		void main()
+		{
+			pid_t spawnPid = -5;
+			int childExitMethod = -5;
+
+			spawnPid = fork();
+			if (spawnPid == -1) //
+			{
+				perror("Hull Breach!\n");
+				exit(1);
+			}else if (spawnPid == 0) // Terminate the child process immediately
+			{
+				printf("CHILD: PID: %d, exiting!\n", spawnPid);
+				exit(0);
+			}
+
+			printf("PARENT: PID: %d, waiting...\n", spawnPid);
+			waitpid(spawnPid, &childExitMethod, 0);  // blocks parent until child proc terms
+													 // with spec'd PID terms
+			printf("PARENT: Child process terminated, exiting!\n");
+			exit(0);
+		}
+
+		$ forkwaittest
+		PARENT: PID: 3311, waiting...
+		CHILD: PID: 0, exiting!
+		PARENT: Child process terminated, exiting!
+
+
+	Checking Exit Status - Normal Termination:
+
+
+		wait(&childExitMethod) and waitpid(.., &cEM, ..) can identify 2 ways a proc can term
+
+		If the proc terms normally, then the WIFEXITED macro returns non-zero:
+			if(WIFEXITED(childExitMethod) != 0)
+				printf("The process exited normally\n");
+
+		Can get the actual exit status with WEXITSTATUS macro:
+			int exitStatus = WEXITSTATUS(childExitMethod);
+
+	CES - Signal Termination
+
+		term'd by a signal, then WIFSIGNALED macro rtns non-zero:
+			if(WIFSIGNALED(childExitMethod) != 0)
+				printf("The process was terminated by a signal\n");
+
+		get terminating signal w/ WTERMSIG macro:
+			int termSignal = WTERMSIG(childExitMethod);
+
+
+	CES - Exclusivity
+		-> barring the use of non-std WCONTINUED and WUNTRACED flags in waitpid(), only 1 of the WIFEXITED() and WIFSIGNALED() macros will be non-zero
+			-> if you want to know how a child proc died, you need to use both
+				-> WIFEXITED and WIFSIGNALED
+
+		if child proc has term'd normally, do not run WTERMSIG() on it, as there is no signal # that killed it
+
+		if child proc was term'd by a signal, do not run WEXITSTATUS() on it, as it doesn't have an exit status (i.e. no exit() or return () fns were exec'd)
+
+		int childExitMethod;
+		pid_t childPID = wait(&childExitMethod);
+		
+		if (childPID == -1)
+		{
+			perror("wait failed");
+			exit(1);
+		}
+		if (WIFEXITED(childExitMethod))  // non-0 evals to True in C
+			{
+			printf("The process exited normally\n");
+			int exitStatus = WEXITSTATUS(childExitMethod);
+			printf("exit status was %d\n", exitStatus);
+		}
+		else
+			printf("Child terminated by a signal\n");  // this statement is true, but
+											// it never hurts to exame WIFSIGNALED() to be sure
 
 
 
+	What if you want to start a process that is running a completely different program?
+		-> exec()
+
+
+	exec..() - Execute
+		-> exec...() replaces the currently running pgm with a new pgm that you specify
+		-> fns do NOT rtn - they destroy the currently running pgm
+			-> no line after exec() call will run
+		-> can spec args to exec..() : these become the cmd line args that show up as 
+			-> argc/argv in C, and as the $1, $2, etc positional parms in a bash shell
+
+		2 types!
+
+			1)		int execl(char *path, char *arg1, .., char*argn);
+				-> execs pgm spec'd by PATH, and gives it the cmd line args spec'd
+					by strings arg1 through argn
+
+			2) 		int execv(char *path, char *argv[]);
+				-> execs pgm spec'd by PATH, and give cmd line args indicated
+					by the ptrs in argv
+
+			exexl and execv do not examine the PATH var - they only look in the current working directory (see next slide notes)
+
+			-> if you don't spec fully qualified path name, then pgms will not be exec'd
+				-> even if they are in a directory listed in PATH, and execl and execv will rtn with an error
+
+			To move around the dir structure in C, use:
+
+				getcwd() :: gets the current working dir
+				chdir() :: sets the cwd
+
+	Easier way: exec..() and the PATH variable
+
+		int execl(char *path, char *arg1, .., char*argn);
+		int execlp(char *path, char *arg1, .., char*argn);
+
+		int execv(char *path, char *argv[]);
+		int execvp(char *path, char *argv[]);
+
+		Versions ending with p will search your PATH environment var for the executable given in a path
+			-> in general, use the version with p as they are much more convenient
+
+
+		-> exec..() replaces the pgm it is called from, does NOT create a new proc
+			-> using fork and exec we can keep our original pgm going and spawn a new proces
+				** this is how a shell works **
+					-> note exec..() does NOT change the proc id, where fork does
+						-> the fork is essentially killed off and the exec replaces it
+							with the same process ID
+
+		passing parms to execlp()
+			int execlp(char *path, char *arg1, .., char*argn);
+
+			1st parm: path name of new pgm
+			remaining parms: "cmd line args"
+				-> 1st arg should be the same as the 1st parm (the cmd itself)
+				-> last arg must always be NULL, which indicates no more parms
+				-> do NOT pass any shell-specific operators into any member of exec..() family
+					ex: <, >, |, &, or !
+						-> the shell is not being invoked - only the OS is!
+			Ex:
+				execlp("ls", "ls", "-a", NULL);
+
+		Full example:
+
+		#include <sys/types.h>
+		#include <unistd.h>
+		#include <stdio.h>
+		#include <stdlib.h>
+
+		void main() {
+			pid_t spawnPid = -5;
+			int childExitStatus = -5;
+			
+			spawnPid = fork();
+			switch (spawnPid) {
+				case -1: { perror("Hull Breach!\n"); exit(1); break; }
+				case 0: {
+					printf("CHILD(%d): Sleeping for 1 second\n", getpid());
+					sleep(1);
+					printf("CHILD(%d): Converting into \'ls -a\'\n", getpid());
+					execlp("ls", "ls", "-a", NULL);
+					perror("CHILD: exec failure!\n"); // only reason it would get here is if ls 										failed
+					exit(2); break;
+				}
+				default: {
+					printf("PARENT(%d): Sleeping for 2 seconds\n", getpid());
+					sleep(2);
+					printf("PARENT(%d): Wait()ing for child(%d) to terminate\n", getpid(), spawnPid);
+					pid_t actualPid = waitpid(spawnPid, &childExitStatus, 0);
+					printf("PARENT(%d): Child(%d) terminated, Exiting!\n", getpid(), actualPid);
+					exit(0); break;
+				}
+			}
+		}
+
+$ gcc -o forkexec forkexec.c
+$ forkexec
+PARENT(8201): Sleeping for 2 seconds
+CHILD(8204): Sleeping for 1 second
+CHILD(8204): Converting into 'ls -a'
+. cAd Ctests forkyouzombie leaky2 python-billion
+.. catsAndDogs dollars forkyouzombie.c leaky2.c python-billion-fast
+addsix-bash c-billion doubleparen forloop leaky3 pythonmath
+addsix-c c-billion.c error.txt greptests leaky3.c pythonstring
+addsix-c.c cstring-array exiter hardlink1 leaky.c pythontest
+array-of-pointers cstring-array.c forkexec havoc malloctest readerror
+array-of-pointers.c cstring-array-unint forkexec.c hw malloctest.c readpipetest
+arraytest cstring-array-unint.c forktest hw.c memerrors readtest
+arraytest.c cstring-inlinearray forktest.c inodetest paramtest rowfile
+arraytest.c.backup cstring-inlinearray.c forkwaittest killthesis perlcamel rowfile2
+billion cstring-segfault.c forkwaittest.c leak2.c_backup permissionstests sortdata
+PARENT(8201): Wait()ing for child(8204) to terminate
+PARENT(8201): Child(8204) terminated, Exiting!
+
+
+	Passing parms to execvp()
+				int execvp(char *path, char *argv[]);
+
+					-> path name, then array of ptrs to strings
+						-> last in array must be NULL
+
+				Example:
+					char* args[3] = {"ls", "-a", NULL};
+					execvp(args[0], args);
+
+$ cat execvptest.c
+
+#include <sys/types.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+void execute(char** argv)
+{
+	if (execvp(*argv, argv) < 0)
+	{
+	perror("Exec failure!");
+	exit(1);
+	}
+}
+void main()
+{
+	char* args[3] = {"ls", "-a", NULL};
+	printf("Replacing process with: %s %s\n", args[0], args[1]);
+	execute(args);
+}
+
+$ gcc -o execvptest execvptest.c
+
+$ execvptest
+Replacing process with: ls -a
+. .. execvptest execvptest.c
+
+
+exit() :
+
+	atexit()
+		-> arrange for fn to be called b4 exit()
+
+	exit()
+		-> calls fns registerd by atexit()
+		-> flushes all stdio output streams
+		-> removes files created by tmpfile()
+		-> then calls _exit()
+
+
+	_exit()
+		-> closes all files
+		-> cleans up everything (see man page for wait() for complete list)
+
+	return() from main() does exactly the same thing as exit()
 
 
 
+Environment variables
+	-> set of txt vars often use to pass info b/w the shell and C pgm
+
+	may be useful if:
+		-> need to spec a config for apgm that you call frequently (LESS, MORE)
+		-> need to spec a config that will affect many diff cmds that you execute
+			(TERM, PAGER, PRINTER)
+
+	view/edit the environ from bash by using the printenv and export cmds, and assignment (=) operator
+
+	environ can be edited in C with setenv() and getenv()
+
+Bash:
+
+	MYVAR="Some text string 1234"
+	export MYVAR
+	echo $MYVAR
+	MYVAR="New text"
+
+C:
+	setenv("MYVAR", "Some text string 1234", 1);  // 1 = overwrite val, if it exists
+	printf("%s\n", getenv("MYVAR"));
 
 
+Manipulating the env through a C program.. local only to that process
+
+$ cat bashAndCEnvironment.c
+#include <stdio.h>
+#include <stdlib.h>
+#include <errno.h>
+#include <string.h>
+int main(int argc, char* argv[])
+{
+	char array[1000];
+	printf("Variable %s has value: %s\n", argv[1], getenv(argv[1]));
+	printf("Doubling it!\n");
+	strcpy(array, getenv(argv[1]));
+	strcat(array, getenv(argv[1]));
+	printf("New value of %s will be: %s\n", argv[1], array);
+	setenv(argv[1], array, 1);
+	printf("Variable %s has value: %s\n", argv[1], getenv(argv[1]));
+}
 
 
+$ MYVAR="TEXT."
+$ export MYVAR
+$ echo $MYVAR
+TEXT.
+
+$ gcc -g -o bashAndCEnvironment bashAndCEnvironment.c
+
+$ bashAndCEnvironment MYVAR
+Variable MYVAR has value: TEXT.
+Doubling it!
+New value of MYVAR will be: TEXT.TEXT.
+Variable MYVAR has value: TEXT.TEXT.
+
+$ echo MYVAR
+TEXT.
 
 
+Fork bombs
+	-> hilarious
 
+	warning signs:
+	-> loop calls fork
+	-> code in which child proc creates another child proc (a fork w/in a fork)
+	-> child proc is starting up a loop
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+	-> consider a forkNow var in loop
+	-> consider wrapping in a loop where if you hit 50 forks, then abort()  (kill everything!)
+	
 
 
 

@@ -63,3 +63,23 @@ d - delete command
 u - undo
 ctrl + r - redo
 
+
+
+Easter eggs
+:help 42
+:help holy-grail
+:help!
+:help map-modes (see comment below the table about :nunmap)
+:help UserGettingBored
+:help spoon
+:help showmatch (read the note)
+:Ni!
+:help bar
+
+
+
+set number
+	-> line numbers
+
+set mouse=a
+	-> clickable locations
