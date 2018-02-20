@@ -2462,6 +2462,485 @@ Fork bombs
 	
 
 
+Proces Management and Zombies   video 2
+--------------------------------------------------------------------------------------
+
+ps - boring by itself, not that useful
+
+Brewster's ps:
+
+$ alias
+…
+alias psme='ps -o ppid,pid,euser,stat,%cpu,rss,args | head -n 1; ps -eH -o
+ppid,pid,euser,stat,%cpu,rss,args | grep brewsteb'
+
+$ psme
+PPID PID 	EUSER 	STAT %CPU RSS COMMAND
+4533 18776  root 	Ss 0.2 4284 sshd: brewsteb [priv]
+18776 18778 brewsteb S 0.0 2112 	sshd: brewsteb@pts/8
+18778 18779 brewsteb Ss 0.0 2044	 -bash
+18779 18911 brewsteb R+ 4.0 1840 		ps -eH -o ppid,pid,euser,stat,%cpu,rss,args
+18779 18912 brewsteb S+ 0.0 820 		grep brewsteb
+
+
+PPID = Parent Proc ID
+PID = Proc ID
+EUSER = Effective User ID
+STAT = execution State
+
+%CPU = % of CPU time this proc occupies
+RSS = Real Set Size - kbs of RAM in use by the proc
+Command = the actual cmd the user entered
+
+
+
+First State Character:
+• D Uninterruptible sleep (usually IO)
+• R Running or runnable (on run queue)
+• S Interruptible sleep (waiting for an event to complete)
+• T Stopped, either by a job control signal or because it is
+being traced
+• Z Defunct ("zombie") process, terminated but not
+reaped by its parent
+
+
+
+Second State Character (Optional):
+• < High-priority (not nice to other users)
+• N Low-priority (nice to other users)
+• L Has pages locked into memory (for real-time and custom IO)
+• s Is a session leader (closes all child processes on termination)
+• L Is multi-threaded (Uses pthread)
+• + Is in the foreground process group
+
+
+
+Zombie aka defunct process:
+	-> when a child proc terms, but its parent does not wait for it,
+		the proc becomes know as a zombie
+
+	-> child proc must report to their parents b4 their resources will be released by the OS
+
+	-> if parents aren't waiting for children, the proc becomes forever consuming
+
+	-> purpose of a zombie proc is to retain the state that wait() can retrieve, they want to be harvested
+
+
+Making Zombies:
+
+$ cat forkyouzombie.c
+
+#include <sys/types.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+void main()
+{
+	pid_t spawnPid = -5;
+	int childExitStatus = -5;
+
+	spawnPid = fork();
+	switch (spawnPid)
+	{
+		case -1:
+			perror("Hull Breach!\n");
+			exit(1);
+			break;
+		case 0:		/* child case */
+			printf("CHILD: Terminating!\n");
+			break;
+		default:
+			printf("PARENT: making child a zombie for ten seconds;\n");
+			printf("PARENT: Type \"ps -elf | grep \'username\'\" to see the defunct child\n");
+			printf("PARENT: Sleeping...\n");
+			fflush(stdout);  /* ensure all text outputted b4 sleeping */
+			sleep(10);
+			waitpid(spawnPid, &childExitStatus, 0);
+			break;
+	}
+	printf("This will be executed by both of us!\n");
+	exit(0);
+}
+
+$ gcc -o forkyouzombie forkyouzombie.c
+$ forkyouzombie
+
+PARENT: making child a zombie for ten seconds;
+PARENT: Type "ps -elf | grep 'username'" to see the defunct child
+PARENT: Sleeping...
+CHILD: Terminating!
+This will be executed by both of us!  /* dramatic 10 second pause here */
+This will be executed by both of us!
+
+// In a second terminal…
+$ ps -elf | grep 'brewsteb' /* reasonable way to use ps */
+4 S root 15296 4443 0 80 0 - 32719 unix_s 10:55 ? 00:00:00 sshd: brewsteb [priv]
+5 S brewsteb 15298 15296 0 80 0 - 32719 poll_s 10:55 ? 00:00:00 sshd: brewsteb@pts/40
+0 S brewsteb 15299 15298 0 80 0 - 30233 wait 10:55 pts/40 00:00:00 -bash
+0 S brewsteb 17053 27991 0 80 0 - 981 hrtime 11:15 pts/9 00:00:00 forkyouzombie
+1 Z brewsteb 17054 17053 0 80 0 - 0 exit 11:15 pts/9 00:00:00 [forkyouzombie] <defunct>
+0 R brewsteb 17057 15299 12 80 0 - 30674 - 11:15 pts/40 00:00:00 ps -elf
+0 S brewsteb 17058 15299 0 80 0 - 25829 pipe_w 11:15 pts/40 00:00:00 grep brewsteb
+4 S root 27987 4443 0 80 0 - 32719 unix_s 08:51 ? 00:00:00 sshd: brewsteb [priv]
+5 S brewsteb 27990 27987 0 80 0 - 32719 poll_s 08:51 ? 00:00:00 sshd: brewsteb@pts/9
+0 S brewsteb 27991 27990 0 80 0 - 30234 wait 08:51 pts/9 00:00:00 -bash
+
+
+Orphan Zombies!
+	-> parent proc terms w/out cleaning up its zombies
+	-> orphans are adpoted by the init proc (usually pid = 1) which periodically
+		(in practice, very quickly) waits() for orphans
+		-> thus eventually die
+
+
+kill
+	-> unix cmd to kill pgms
+		-> older version called kfork
+
+	-> "kill" = misnomer - it really just sends signals
+
+				\/ pid of proc being signaled
+	kill -TERM 1234
+		  ^signal to send
+
+		  -> pid > 0, sig sent to the given proc PID
+		  -> pid == 0, signal sent to ALL procs int he same proc group as the sender (think 					your shell)
+		  -> more trickiness for pid < 0
+
+
+top
+
+• top allows you to view the processes running on the machine in real
+time - one of the few animated built-in programs
+
+$ top
+top - 14:14:34 up 34 days, 5:15, 9 users, load average: 0.03, 0.18, 0.22
+Tasks: 703 total, 1 running, 697 sleeping, 4 stopped, 1 zombie
+Cpu(s): 0.1%us, 0.1%sy, 0.0%ni, 99.8%id, 0.0%wa, 0.0%hi, 0.0%si, 0.0%st
+Mem: 65922540k total, 7876576k used, 58045964k free, 663988k buffers
+Swap: 2588668k total, 0k used, 2588668k free, 5258716k cached
+
+PID USER PR NI VIRT RES SHR S %CPU %MEM TIME+ COMMAND
+27609 brewsteb 20 0 27884 1796 996 R 3.4 0.0 0:00.10 top
+1 root 20 0 33656 1624 1292 S 0.0 0.0 1:41.47 init
+2 root 20 0 0 0 0 S 0.0 0.0 0:09.18 kthreadd
+3 root RT 0 0 0 0 S 0.0 0.0 0:21.23 migration/0
+4 root 20 0 0 0 0 S 0.0 0.0 0:14.47 ksoftirqd/0
+5 root RT 0 0 0 0 S 0.0 0.0 0:00.00 stopper/0
+
+
+Diagnosing a slow CPU
+
+uptime - cmd show s avg # of runnable procs over several diff periods of time
+
+$ uptime
+1:23pm up 25 day(s), 5:59, 72 users, load average: 0.18, 0.19, 0.20
+
+	-> if showing that your runnable queue is consistently larger than the # of corse, CPU is causing a bottleneck/slow-down
+
+
+
+$ cat /proc/cpuinfo
+
+processor : 0
+vendor_id : GenuineIntel
+cpu family : 6
+model : 45
+model name : Intel(R) Xeon(R) CPU E5-2665 0 @ 2.40GHz
+stepping : 7
+microcode : 1808
+cpu MHz : 2399.993
+cache size : 20480 KB
+physical id : 0
+siblings : 16
+core id : 0
+cpu cores : 8
+apicid : 0
+initial apicid : 0
+fpu : yes
+fpu_exception : yes
+
+
+
+Job Control
+	-> can we run multiple processes at once? (still retain access to the cmd line)
+
+Foreground/background
+	-> can only be one shell foreground proc - its the one you are currently interacting w/
+		-> if at the cmd prompt, then your FG pgm is the shell itself!
+
+	-> Processes in the BG can still be executing, but can also be in any number of states
+		(first state chars)
+
+	-> no real difference b/w them except
+		-> when a user enters a cmd that is intended to run in the FG (normal cmd), the proc started runs to completeion b4 the user is prompted again
+
+		-> when same is done for BG, user immediately prompted agian after the proc is executed
+
+	-> i.e. control input to the terminal is not interrupted by a background process
+
+Start BG
+	$ ping www.oregonstate.edu &
+
+	... ping readouts
+
+	Sending TSTp signal stops (not terms) a proc and puts it into the BG
+		-> ctrl z sends this signal
+
+jobs - cmd to see what you are running
+		-> -l (dash el) to see the proc ids
+
+		-> kill -KILL 31327   (kill proc with this id)
+		-> kill -KILL %1 		(kill job 1)
+
+
+
+fg - use job #s provided by jobs to manip procs
+
+	fg %1 - bring job 1 from BG to FG and start it again
+
+	fg - bring most recent BG'd job to FG and start running again
+
+
+bg: 
+
+	bg %1 - spec a stopped pgm in BG and keep it running in BG
+
+	bg - most recent
+
+suspend a proc:
+
+$ ping www.oregonstate.edu 2>/dev/null 1>logfile &
+[1] 1660
+
+$ jobs
+[1]+ Running ping www.oregonstate.edu 2> /dev/null > /dev/null &
+
+$ kill -TSTP %1
+[1]+ Stopped ping www.oregonstate.edu 2> /dev/null > /dev/null
+
+$ jobs
+[1]+ Stopped ping www.oregonstate.edu 2> /dev/null > /dev/null
+
+
+
+$ history 5
+
+1012 jobs
+1013 psme
+1014 top
+1015 jobs
+1016 history 5
+
+exe a previous cmd
+
+$ history 3
+1030 jobs
+1031 psme
+1032 history 3
+
+$ !1030
+jobs
+
+$ history 3
+1032 history 3
+1033 jobs
+1034 history 3
+
+$ !-2
+jobs
+
+$ !!
+jobs
+
+$ history 3
+1034 history 3
+1035 jobs
+1036 history 3
+
+
+
+Signals   video 3 --------------------------------------------------------------------------------------
+
+Can we connect our procs together? How can they comm? Are there simple ways?
+	-> when a user proc wants to contact the kernal, it uses a system call
+
+
+Signals are the answer: they interrupt the flow of control by stopping execution
+	and jumping to an explicitly spec'd or default signal handler fn
+
+Critical point: signal stell a proc to DO something - take an action b/c a user cmd or an event
+
+Fixed set of signals
+	-> can't create own signals
+		-> though the programmatic response to and meaing of most signals is up to us
+
+	-> 2 signals w/ no inherent meaning at all - you assign meaning to them by catching them and running code
+
+uses for signals: kernal to proc
+	-> notifications
+		-> proc did something wrong
+		-> timer expired
+		-> child proc has completed
+		etc..
+
+ufs : proc to proc
+	-> suspended or resume exec of procs
+	-> term
+	-> change modes
+	-> change comm methods
+
+
+
+Signal # Easy Name Catchable Meaning of Signal sent to Process Default ActionIf Not Caught CoreDump
+SIGABRT 6 Abort Yes Terminate; sent by process itself during abort() call which performs no cleanup, unlike exit(). Terminate Yes
+SIGQUIT 3 Quit Yes Terminate; sent by user. Terminate Yes
+SIGINT 2 Interrupt Yes The process is requested to terminate; performs cleanup; CTRL-C sends this to process and all its children. Terminate No
+SIGTERM 15 Terminate Yes The process is requested to terminate; performs cleanup. Terminate No
+SIGKILL 9 Kill No Terminate instantly, no cleanup; handled entirely by the kernel; nuke from orbit. Terminate, not catchable No
+
+
+Signaling a script
+
+$ cat sigtermtest
+
+#!/bin/bash
+trap "echo 'SIGTERM Received! Exiting with 0!'; exit 0" SIGTERM
+while [ 1 -eq 1 ]
+do
+echo "nothing" > /dev/null
+done
+
+$ sigtermtest &
+[1] 1708
+
+$ psme
+PPID PID EUSER STAT %CPU RSS COMMAND
+4533 751 root Ss 0.0 4284 sshd: brewsteb [priv]
+751 767 brewsteb S 0.0 2116 sshd: brewsteb@pts/9
+767 768 brewsteb Ss+ 0.0 2176 -bash
+4533 1508 root Ss 0.0 4284 sshd: brewsteb [priv]
+1508 1510 brewsteb S 0.0 2112 sshd: brewsteb@pts/12
+1510 1511 brewsteb Ss 0.0 2064 -bash
+1511 1708 brewsteb R 97.5 1220 /bin/bash ./sigtermtest
+1511 1731 brewsteb R+ 0.0 1716 ps -eH -o ppid,pid,euser,stat,%cpu,rss,args
+1511 1732 brewsteb S+ 0.0 816 grep brewsteb
+$ kill -SIGTERM 1708
+SIGTERM Received! Exiting with 0!
+[1]+ Done sigtermtest
+
+
+$ alias psme
+alias psme='ps -o ppid,pid,euser,stat,%cpu,rss,args | head -n 1;
+ps -eH -o ppid,pid,euser,stat,%cpu,rss,args | grep brewsteb'
+
+
+SIGSEGV - Segmentation
+Fault
+Yes Invalid memory reference; terminate, no cleanup. Terminate Yes
+
+SIGBUS - Bus Error Yes Non-existent physical address. Terminate Yes
+
+SIGFPE - Floating Point
+Error
+Yes Sent when a process executes an erroneous floating
+point or integer operation, such as divide by zero.
+Terminate Yes
+
+SIGILL - Illegal
+Instruction
+Yes Sent when a process attempts a CPU instruction it cannot
+issue (malformed, unknown, wrong permissions).
+Terminate Yes
+
+SIGSYS - System Call Yes Sent when a process passes an incompatible argument to
+a system call (rare, we use libraries to do this right for us).
+Terminate Yes
+
+SIGPIPE - Pipe Yes Sent when a process tries to write to a pipe without
+another process attached to the other end of the pipe.
+Terminate Yes
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
