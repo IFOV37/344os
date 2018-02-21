@@ -1,0 +1,14 @@
+Program 3 notes:
+
+Recommended order:
+
+1)	Get input from user on a loop, including parsing $$, as part of the prompt
+2) 	exit command (don't worry about cleaning up background children yet)
+3) 	cd command
+4)	fork() + exec() handling
+5) 	Input/output redirection
+6)	SIGINT handling
+7)	Background commands
+8)	Finish exit command to clean up background children
+9)	status command
+10)	SIGTSP handling

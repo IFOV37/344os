@@ -2864,24 +2864,169 @@ Terminate Yes
 
 
 
+Why notify on events?  Branching logic!
+	-> clean up mem free()
+	-> perform final file writes
+	-> write to log files
+	-> send signals itself
 
 
+SIGALRM 14 Alarm Yes Sent by alarm() function, normally sent & caught to
+execute actions at a specific time; performs cleanup
+Terminate No
+
+SIGSTOP - Stop No Stop execution (but stay alive). Stop, not
+catchable
+-
+
+SIGTSTP - Terminal Stop Yes Stop execution (but stay alive). Stop -
+
+SIGCONT - Continue Yes Continue (resume) execution if stopped. Continue -
+
+SIGHUP 1 Hang Up Yes Sent to a process when its terminal terminates Terminate No
+
+SIGTRAP - Trap Yes Sent when a trap occurs for debugging, i.e. var value
+change, function start, etc.; terminate, no cleanup.
+Terminate Yes
 
 
+Timers
+	-> wait a spec'd period of time
+		-> busy wait which will consume CPU whiel accomplishing nothing
+		-> or, tell kernal that you want notified after a certain amt of time passes
+
+		alarm() or ualarm() fns
+			-> after the time spec'd has passed, kernal will send your proc a SIGALRM signal
+
+		sleep()
+			-> calls alarm
+			-> then calls pause, which puts proc into waiting state
+			-> when SIGALARM received, sleep() finally returns
 
 
+Signal # Easy Name Catchable Meaning of Signal sent to Process Default Action If Not Caught Core Dump
+
+SIGCHLD - Child Terminated  Yes  A foreground or background child process of this process
+has terminated, stopped, or continued.  None   -
+
+	-> normally wait() and waitpid() will suspend proc until 1 of its child proc has term'd
+	-> using this signal allows a parent proc to do other work instead of going to sleep
+		-> will be notified via signal when child terms
+		-> when received, proc can (immediately or later) call wait() or waitpid() when ready,
+			perhaps leaving the child a zombie for just a little while
 
 
+SIGUSR1 and SIGUSR2 have no special meaning to the kernal
 
 
+$ cat sigchldtest
+
+#!/bin/bash
+set -m  															/* can omit SIG */
+trap "echo 'Triggering a child process termination with a silent ls'; ls > /dev/null" USR1
+trap "echo 'SIGCHLD Received! Exiting!'; exit 0" CHLD
+while [ 1 -eq 1 ]
+do
+echo "nothing" > /dev/null
+done
+
+$ sigchldtest &
+[1] 19141
+
+$ psme
+PPID PID EUSER STAT %CPU RSS COMMAND
+4533 18174 root Ss 0.0 4280 sshd: brewsteb [priv]
+18174 18187 brewsteb S 0.0 2108 sshd: brewsteb@pts/9
+18187 18188 brewsteb Ss 0.0 2104 -bash
+18188 19141 brewsteb R 102 1224 /bin/bash ./sigchldtest
+18188 19159 brewsteb R+ 0.0 1844 ps -eH -o ppid,pid,euser,stat,%cpu,rss,args
+18188 19160 brewsteb S+ 0.0 816 grep brewsteb
+
+$ kill -SIGUSR1 19141
+Triggering a child process termination with a silent ls
+SIGCHLD Received! Exiting!
+[1]+ Done sigchldtest
+
+$ psme
+PPID PID EUSER STAT %CPU RSS COMMAND
+4533 18174 root Ss 0.0 4280 sshd: brewsteb [priv]
+18174 18187 brewsteb S 0.0 2108 sshd: brewsteb@pts/9
+18187 18188 brewsteb Ss 0.0 2104 -bash
+18188 19200 brewsteb R+ 1.0 1844 ps -eH -o ppid,pid,euser,stat,%cpu,rss,args
+18188 19201 brewsteb S+ 0.0 820 grep brewsteb
 
 
+Abnormal Termination : Cord Dumps
+	-> some signals
+	-> during runtime, if proc crashes due to seg fault, bus error, etc..
+	-> contains vars, registers, kernal procs info
+	=> logged into a file
 
 
+Signal Handling API
+	-> signals that hit your proc will cause the default action to occur
+
+	-> to change this, organize signals into sets, then assign your own custom defined "signal handler" functions to these sets, to override the default actions and do w/e you want
+
+Need a few utlity functions first..
+	
+	pause()
+		-> sometimes  a proc has nothing to do, so you consider calling sleep(), but you want it to be able to respond to signals, which it CAN'T do in sleep()
+			-> use pause()
+
+		-> if signal set to be ignored, then pause() continues to be in effect
+
+		-> if signal causes term, pause() does nothing (b/c proc dies)
+
+		-> if sig caught, the approp signal handler fn will be called
+			-> after fn done, pause() rtns -1 and sets errno to EINTR, the proc resumes exe
+
+		-> could issue another pause() and continue on
 
 
+	raise() and alarm()
+		-> can send yourself a spec'd signal immediatley with raise()
+			int raise(int signal);
+
+		alarm() fn sends proc SIGALRM signal at a later time
+			unsigned int alarm(unsigned int seconds);
+			-> alarm() will trn immediately, unlike slee()
+			-> can only have 1 active at a time
+
+Utlity type: Signal Sets
+	-> list of sig types used elsewhere
+
+	dfined using the special type sigset_t in <signal.h>
+
+	fns for managing:
+		segemptyset()
+		sigfillset()
+		sigaddset()
+		sigdelset()
+
+	Declare a signal set:
+		sigtset_t my_signal_set;
+
+	Init or reset the signal set to have NO signal types:
+		sigemptyset(&my_signal_set);
+
+	Init or reset the signal set to have ALL signal types:
+		sigfillset(&my_signal_set);
+
+	Add a single signal type to the set:
+		sigaddset(&my_signal_set, signal);
+
+	Remove a single signal type from the set:
+		sigdelset(&my_signal_set, signal);
 
 
+sigaction()
+	sigaction() registers a signal handling fn that you've created for a spec'd set of signals
+		int sigaction(int signo, struct sigaction *newact, struct sigaction *origact);
+
+			1st parm = signal type of interest (SIGINT, SIGHUP, etc..)
+			2nd parm = ptr to a data-filled sigaction struct which describes the action to be 				taken upon receipt of the signal given in the 1st parm
+			3rd parm = ptr to another sigaction struct, which the sigaction() fn will use to 				to write out what the handling settings for this signal were BEFORE 				this change was requested
 
 
 
