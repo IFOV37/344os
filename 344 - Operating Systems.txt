@@ -3028,8 +3028,28 @@ sigaction()
 			2nd parm = ptr to a data-filled sigaction struct which describes the action to be 				taken upon receipt of the signal given in the 1st parm
 			3rd parm = ptr to another sigaction struct, which the sigaction() fn will use to 				to write out what the handling settings for this signal were BEFORE 				this change was requested
 
+sigaction structure:
 
+	struct sigaction  			/* be careful, this struct shares same name as the fn */
+	{
+		void (*sa_handler) (int);
+		sigset_t sa_mask;
+		int sa_flags;
+		void (*sa_sigaction) (int, siginfo_t*, void*);
+	};
 
+1st attribute should be set to one of 3 vals:
+	SIG_DFL :: take the default action for the signal
+	SIG_IGN :: ignore the signal
+	a ptr to a fn that should be called when this signal is received
+
+pts to fn's in C:
+	as defined in sigaction struct:
+							\/ indic. sa_handler should pt to a fn that has one parm (an int)
+							will hold signal # when fn called (impt b/c multiple signals may be registered to with this struct and the int tells us which sig caused the handler to start)
+		void (*sa_handler)(int);
+				^ indicates a ptr to fn
+		^ indicates fn sa_handler pts to does not rtn anything
 
 
 
