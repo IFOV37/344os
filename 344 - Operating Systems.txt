@@ -2761,7 +2761,8 @@ $ history 3
 
 
 
-Signals   video 3 --------------------------------------------------------------------------------------
+Signals   video 3
+--------------------------------------------------------------------------------------
 
 Can we connect our procs together? How can they comm? Are there simple ways?
 	-> when a user proc wants to contact the kernal, it uses a system call
@@ -3212,7 +3213,28 @@ the sa_flags variable of the sigaction struct
 
 
 
+More Unix IO   video 4
+--------------------------------------------------------------------------------------
 
+When exec..() a proc, you replace the cur proc w/ a new one
+	-> BUT the files are still open and accessible to the new proc.. may not be what you want
+
+Redirection in shell
+	ls > file
+	stats < file1
+	cat longfile | more
+	find . -name "paper" -print 2> /dev/null
+	echo "an error occurred" 1>&2
+
+	possible b/c fork and exec
+
+
+IO re-dir
+	-> possible b/c open files are shared accross fork and exec
+	-> each child proc has the same files as parent due to the file descriptors being the same
+
+		-> READ AND WRITE move the same file pointer for the SHARED file descriptor
+			-> to prevent this, have 1 of the procs close and re-open the file
 
 
 
