@@ -3052,23 +3052,161 @@ pts to fn's in C:
 		^ indicates fn sa_handler pts to does not rtn anything
 
 
+Example using function pointer:
+
+#include <stdio.h>
+
+int AddOne(int inputArg);
+
+void main()
+{				  \/ the arg type
+	int (*fpArg)(int) = AddOne; /* delcares fn ptr var named fpArg and sets qual to the same address as where AddOne() is declared */
+	printf("10 + 1 = %d\n", fpArg(10));
+}
+
+int AddOne (int input)
+{
+	return input + 1;
+}
+
+
+sigset_t sa_mask
+	-> indicates what sigs should be blocked while the signal handler is executing
+		-> blocked = arriving during exe of sa_handler, held until done, then delivered to the process
+
+int sa_flags
+	additional instruct flags
+		-> SA_RESTHAND
+			-> resets sig handler to SIG_DFL (default action) after 1st sig rec'd and handled
+
+		-> SA_SIGINFO
+			-> tells kernal to call fn spec'd in the fourth attribute (sa_sigaction), instead of 1st attr (sa_hanlder)
+
+		-> 0 if aren't planning to set flags
+
+
+void (*sa_sigaction) (int, siginfo_t*, void*);
+	-> spec alt sig hndlr fn to be called, only used if you use the SA_SIGINFO flag is set in sa_flags
+
+	-> siginfo_t = struct ptr 
+	-> void* ptr allows you to pass in a context, an obsolete, non-posix construct that manages user threads
+	-> most of the time we will use sa_hanlder, not sa_sigaction
+
+
+catching and ignoring signals
+
+$ cat catchingSignals.c
+#include <signal.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <unistd.h>
+
+void catchSIGINT(int signo)
+{
+	char* message = "Caught SIGINT, sleeping for 5 seconds\n";
+	write(STDOUT_FILENO, message, 38);  // no printf() during signal handler as it's non-reentratn, no strlen(message) in place of 38 (also non-reent)
+	raise(SIGUSR2);  send this proc sigusr2, if this sig is blocked, it'll be delivered when the block is removed
+	sleep(5);
+}
+
+void catchSIGUSR2(int signo)
+{
+	char* message = "Caught SIGUSR2, exiting!\n";
+	write(STDOUT_FILENO, message, 25);
+	exit(0);
+}
+
+
+main()
+{
+	struct sigaction SIGINT_action = {0}, SIGUSR2_action = {0}, ignore_action = {0};
+	
+	SIGINT_action.sa_handler = catchSIGINT;
+	sigfillset(&SIGINT_action.sa_mask);
+	SIGINT_action.sa_flags = 0;
+	
+	SIGUSR2_action.sa_handler = catchSIGUSR2;
+	sigfillset(&SIGUSR2_action.sa_mask);
+	SIGUSR2_action.sa_flags = 0;
+	
+	ignore_action.sa_handler = SIG_IGN;
+	
+	sigaction(SIGINT, &SIGINT_action, NULL);
+	sigaction(SIGUSR2, &SIGUSR2_action, NULL);
+	sigaction(SIGTERM, &ignore_action, NULL);
+	sigaction(SIGHUP, &ignore_action, NULL);
+	sigaction(SIGQUIT, &ignore_action, NULL);
+	
+	printf("SIGTERM, SIGHUP, and SIGQUIT are disabled.\n");
+	printf("Send a SIGUSR2 signal to kill this program.\n");
+	printf("Send a SIGINT signal to sleep 5 seconds, then kill this program.\n");
+	
+	while(1)
+		pause();
+}
 
 
 
 
 
 
+Results:
+
+$ catchingSignals
+SIGTERM, SIGHUP, and SIGQUIT are disabled.
+Send a SIGUSR2 signal to kill this program.
+Send a SIGINT signal to sleep 5 seconds, then kill this program.
+^CCaught SIGINT, sleeping for 5 seconds  	// sending SIGINT WITH ^C
+Caught SIGUSR2, exiting!
+
+$ catchingSignals &
+[1] 29443
+
+$ SIGTERM, SIGHUP, and SIGQUIT are disabled.
+Send a SIGUSR2 signal to kill this program.
+Send a SIGINT signal to sleep 5 seconds, then kill this program.
+$
+$
+$ kill -SIGTERM 29443  // does nothing, it's disabled
+$ kill -SIGUSR2 29443
+Caught SIGUSR2, exiting!
+[1]+ Done catchingSignals
+
+
+When calling fork(), child processes inherit and get their own instance
+of the signal handler functions declared in the parent - these are assigned
+to the same signals as the parent automatically
 
 
 
+However, calling exec…() in your process will remove any special signal
+handler function you wrote and then assigned to sa_handler or
+sa_sigaction previously!
 
 
+Critical note: SIG_DFL and SIG_IGN are preserved through an exec…().
+This is the only way to tell processes you exec…(), that you didn’t write
+(like ls, other bash commands, etc.), to ignore particular signals. In other
+words, there is no way to set up an arbitrary signal handler for programs
+you can’t change: you can only set them to ignore specific signals
 
 
+blocking signals:
+	sigprocmask()
 
 
+• Signals can arrive any time, including in the middle of a system call!
 
+• System calls are savvy about signals and prevent data loss and corruption
+from occurring
 
+• They also prevent partial actions from happening
+
+• Normally, system calls will return an error if a signal interrupts them, and
+set errno to EINTR
+
+• You can tell system calls to automatically restart by setting SA_RESTART in
+the sa_flags variable of the sigaction struct
 
 
 
