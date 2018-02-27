@@ -12,3 +12,64 @@ Recommended order:
 8)	Finish exit command to clean up background children
 9)	status command
 10)	SIGTSP handling
+
+
+Writing own shell, in C (any version of C):  smallsh
+	-> allow redirection of standard input and output
+	-> support both foreground and bg procs (controllable by the cmd line and by receiving sigs)
+
+	Support 3 built in cmds:
+			1) 		exit
+			2) 		cd
+			3) 		status
+			comments, lines which begin with #
+				-> ignore these, use strncmp
+
+--------------------------------------------------------
+The Prompt
+--------------------------------------------------------
+
+	:  symbol as a prompt for each cmd line
+		-> flush out the output buffers each tine you print
+			fflush(stdout)
+
+	general syntax of cmd line:
+		command [arg1 arg2 ...] [< input_file] [> output_file] [&]
+			[optional]
+		special symbols <, >, and &
+        & as last character means run in background, else normal text
+
+        -> max 2048 chars and 512 args
+        	-> no error checking on the syntax of the cmd line
+        -> allows blank lines and comments
+        	# = comment line (ignore)
+        	blank line does nothing
+        		-> reprompt for another command
+
+
+
+display ": " Then there command here
+	-> cmds separated by a space
+	* asprintf to allocate and store string
+
+ gcc -o kosterkl.adventure kosterkl.adventure.c -lpthread
+gcc -std=c89 -g -o kosterkl.adventureRev1 kosterkl.adventureRev1.c -lpthread
+
+
+
+
+--------------------------------------------------------
+Command Execution
+--------------------------------------------------------
+
+fork, exec, and waitpid to execute cmds
+	when non-built in cmd is received, have the parent fork off a child
+		-> does any needed i/o redirection before running exec on the file comd given
+			dup2()
+
+
+
+
+
+
+
