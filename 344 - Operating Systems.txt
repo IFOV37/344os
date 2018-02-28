@@ -3329,10 +3329,51 @@ Creating a Pipe
 		-> parent & child have the fds created with the pipe
 	-> child proc now reads from input fd and parec proc writes to output fd (or vice versa)
 
-	pass pipe() an array of 2 ints
+	pass pipe() an array of 2 ints, whr it stores 2 new open file descriptors that it creates
+		-> 1st = input fd
+		-> 2nd = output fd
+		1 of the fds should be used by the parent proc and the other should be used by the child proc
+
+flow ctrl w/ read()
+
+	read() succeds if data is available
+		-> receives data and rtns immediately
+		-> rtn val tells you how many bytes were read, which may be less than you requested
+
+		-> if data not avail, read() will BLOCK wiating for data (your proc exec is suspended until data arrives)
+			-> read() is a system call
+
+	write()
+		-> not rtn unil all data has been written
+
+	pipes have a certain size
+		-> only so much fits, typically 64k - can b changed
+		-> if pipe fills up, and no more room, write() will block until space becomes available (i.e. somebody reads data from the pipe)
+
+	Checking read() rtn value us very important
+		-> not just -1 (error)
+		-> will tell you if the desired # of bytes was not read - this can tell you if the pipe didn't have the amt of data you expected it to
+		-> previous ex used @@ terminator instead of tracking byte count
+			-> when don't know # bytes
+
+		same for write()
+			-> if # bytes != expected, need to loop over the write again, writing only what got missed again to it
 
 
+closing pipes:
 
+P 1 closes output pipe:
+	-> if p2 currently blocked on a read(), then p2's read will rtn 0
+
+p2 closes input pipe:
+	-> if p1 tries to write to the pipe, write() will rtn -1, and errno (in p1) will be set to EPIPE
+	-> p1 will be sent the SIGPIPE signal
+
+named pip = fifo
+
+	mkfifo()
+		-> persistent pipe
+		-> client server arch w/out sockets
 
 
 

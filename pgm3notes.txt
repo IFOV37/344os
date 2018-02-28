@@ -73,3 +73,6 @@ fork, exec, and waitpid to execute cmds
 
 
 
+sighandlers get gutted during exec
+
+and stays with the parent
