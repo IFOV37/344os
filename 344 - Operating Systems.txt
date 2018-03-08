@@ -3377,7 +3377,430 @@ named pip = fifo
 
 
 
+Block 4
+======================================================================================
 
+Network Fundamentals   video 1
+--------------------------------------------------------------------------------------
+
+IPC via Network Communication
+	proc A <---> proc B
+
+	Terms:
+		Client/Server architecture :: a networking arrangment such that one proc (server) is continuously waiting for new connections from the other procs (clients)
+
+		Client :: proc that initiates the connection, req'ing a service
+
+		Server :: proc that is always running, waiitng for new conns from client procs
+
+
+Unix Daemon - type of server
+	-> proc running in background, ready to provide a service to the pgms that need it
+		-> syslogd (system log daemon) maintains the system log
+		-> lpd (line printer daemon) manages print spooling
+		-> ntpd (network time protocol) manages clock sync on a network
+		-> dhcpd (dynamic host control protocol) assigns TCP/IP confi data to network clients that request it
+
+	-> all have the init process (pid == 1) as their parent
+		-> as of 2016, many Linux distros replaced init w/ systemd
+
+
+Example protocol:  HTTP
+	-> hyper text transfer protocol
+		-> relatively simple: primarily used to support 1 feature, req'ing of a  file to be dl'd
+
+	-> standardized protocol defining:
+		-> how client reqs are formatted
+		-> how server responses are formatted
+
+	-> text-based protocol, including all reqs, responses, and errors
+
+		-> most widely used web server is Apache
+			-> apache unix daemon = httpd
+
+	-> simple request mode
+		-> client connects to server then sends:
+			GET abc.html
+		-> server receives and parses the GET cmd, rtns the file req'd
+
+	-> enhanced request mode
+		-> client connects to the server then sends
+			-> GET index.html HTTP/1.1
+		-> server responds with some header info, such as server type and version, then a blank line, and then the data file
+
+
+Text protocol debugging tool
+	telnet -> helps debug t-b pros, but was design for interacting with t-b pro network sessions
+
+	-> almost w/o exception nwo, servers do not use telnet for shell access
+		-> all tex passed in plain text - it can be read by every node in b/w client server
+			-> SSH = current std
+				-> encrypts transmitted data
+
+	-> can pass telnet a 2nd parm that specs the port you want to connect to
+
+
+
+Non- tb based app pros
+	-> not all t-b
+		-> TCP/IP has no prob transferring binary data
+
+	Adv of t-b pros
+		-> easy to debug
+		-> easy to communicate/understand
+
+	Disadv
+		-> not very compact or efficient
+		-> server can spend a lot of time just parsing text
+			-> very impt for t pros to be simple
+
+Network layer model
+
+	Layers
+
+	Application: your software, utilzing the network
+	common pro = http
+		-> agnostic to underlying methods that make the data go from one host to the other
+		-> web browsers, games, IM clients, video chat, email, etc..
+		-> uses  send()  and recv()  (ex)
+
+
+	Transport
+
+		common pro = TCP  and  UDP
+			-> pros that ctrl how data is sent from 1 host all the way to the other
+				-> irrespective of # of nodes, hops, or networks the data passes through
+
+			TCP: Transmission Control Protocol - connection-oriented, guaranteed, in-order data transport
+
+			UDP: Universal Datagram Protocol - connectionless, not guaranteed
+
+
+	Network 
+		common Pro = IP
+
+		-> addressing and org of particular set of connected hosts (network), defines addressing b/w networks
+
+		IP: Internet Protocol - naming, addressing, and routing from host to host and across networks
+
+		-> still indpt of physical connection type
+
+	Link
+
+		common = Ethernet, 802.11
+
+		-> concerned w/ getting data from just one node to the next neighboring node; no planning of routes
+
+		Ethernet: de facto addressing and signaling protocol currently in use in modern networks
+			-> uses Media Access Control addresses to com, together with IP
+
+		802.11: aka Wi-fi, de facto pro for wireless comm
+			-> ctrls sharing of congested transmission space and connection speeds based on quality
+
+	Physical
+		common = twisted pair copper, radio, fiber
+
+		-> actual hardware used to enable 2 hosts to talk
+
+		Copper: std cat 5 or 6 network cables ( 4 pairs of twisted copper strands) connect most of the world
+
+		Radio: enables wireless devices to communicate
+
+TCP/IP High lvl functionality
+	-> provides comm b/w 2 procs, potentially separated by a network
+	TCP is pro appl interacts w/
+	IP provides the addressing system for routing network packets
+
+TCP details:
+	-> byte stream interface (like stdio)
+	-> maintains resources to keep conns open until explicitly closed
+	-> bi directional
+	-> provides ctrls to slow down the sender if the nodes in the path to the receiver are burdened w/ traffic or lossy
+
+Apps on top of TCP/IP
+	-> doesn't interpret bytes, only transfers, like phone connection
+
+TCP
+	-> sends out network traffic organized into packets
+		-> uses the addresses spec'd and org'd by IP
+	Prob: Ip does NOT guarantee
+			-> data integrity
+			-> packet order
+			-> prevention of dups
+			-> packet will actually arrive
+
+	TCP can detect if integrity of stream of packets encounters issues
+		will do these:
+			-> re order packets
+			-> req packet re-transmission
+			-> drop dup packets
+
+
+UDP: user datagram protocol
+
+	connectionless
+	data broken in datagrams
+	server deson't remember clients b/w datagrams
+	may arrive out of order or dropped
+
+
+	Used for
+		streaming audio/vid
+		mass broadcasting
+		asynch comm (games)
+
+IP: internet protocol
+
+	-> network interface (card) has an address, unique on network
+
+	IP(v4) = 32 bit, 4, 1 byte numbers with .
+
+	Interface: conn b/w host/router and physical link
+		-> each I has 1 address
+
+
+IPv4 = 32 bit addresses 2^32 addresses.. not enough for the world
+
+
+IPv6 = 128 bit, 50 octillion for each of 6.5 billion ppl on earth
+
+
+Own ip address has special hostname: localhost
+
+can specify port for listening
+
+
+
+Network Clients   video 2
+--------------------------------------------------------------------------------------
+
+Berkley Sockets
+	-> defacto network comm method across local area networks (LAN) and the internet
+		-> others exit, but req diff transport pros
+
+			DON'T WRITE YOUR OWN VERSION OF TCP, JUST USE SOCKETS DUMMY
+				-> think of the children! lol
+
+Network sockets
+	-> berkely socket api
+		-> socket is the endpoint of a comm link b/w 2 procs
+		-> socket api treats network conns like files as much as possible
+
+	File descriptor table - sockets who up as files	
+
+Ports: use to reach a specific proc on a machine
+	-> each proc listens on a unique port
+
+		complete address that can be used in a socket is an IP address combined w/ a port #
+			43.144.31.233:80
+
+For documentation:
+
+	man -s 3n socket
+	man -k socket
+
+		-> all info to use network library is scattered across diff man pages
+			-> start from a known good place since they are difficult to write
+				-> he is going to give us some code
+
+
+Creating and connecting a socket on the client
+	Process:
+		1)	creat the socket endpt w/ socket()
+
+		2) 	connect the socket to the server with connect()
+
+		3) 	use read() and write(), or send() and recv(), to transfer data to and from the socket (sent auto to and from socket on the server)
+
+		int socket(int domain, int type, int protocol);
+			-> rtns fd or -1
+				domain: for g-p sockets to connect across a network, use AF_INET
+						for same machine IPC, AF_UNIX
+
+				type: tcp = SOCK_STREAM
+					  udp = SOCK_DGRAM
+
+				protocol: use 0 for normal behavior
+
+		int socketFD = socket(AF_INET, SOCK_STREAM, 0);
+		if(socketFD == -1)
+		{
+			perror("Hull break: socket()"; exit(1));
+		}
+
+
+
+Connecting the socket to an address
+	
+	int connect(int sockfd, struct sockaddr* address, size_t address_size);
+		rtns 0 on success, -1 failure
+			
+			sockfd: socket you want to connect
+
+			address: struct that holds the address of whr you are connecting, plus other settings
+
+			address_size: size of address struct
+
+	if (connect(socketFD, (struct sockaddr*)&serverAddress, sizeof(serverAddress)))
+	{
+				perror("Hull break: socket()"; exit(1));
+	}
+
+Filing the address struct:
+
+IP address.. getting the actuall address into a form connect() can use is tricky
+
+struct sockaddr_in serverAddress;
+
+serverAddress.sin_family = AF_INET;
+serverAddress.sin_port = htons(7000);  // host to network short, converts host/pc byte order(LSB) to network byt order (MSB)
+serverAddress.sind_addr.s_addr = inet_addr("192.168.1.1");
+									^ converts std dotted IP string into INT
+
+
+Filling the address struct: domain name
+
+More stuff here, copy/paste didn't work properly with the slides for some reason
+	-> just look at the lecture slides for this stuff
+
+	Tons of example code
+
+
+
+Network Servers   video 3
+--------------------------------------------------------------------------------------
+
+
+Non-concurrent svr connection
+	-> only listens to a spec'd port
+	-> has to differentiate between each connection and communicate w/ each client
+
+
+	1) it chooses which one
+	2) creates a new fd for chosen connection (exlusive to that connection)
+		-> OS network layer on the server differentiates each conn by 4 pieces of the address, routing the network packets to the correct socket/fd based on
+			svr ip
+			svr port
+			client ip
+			client port
+
+svr procedure w/ socket api
+
+	1) create network socket/fd with socket()
+	2) bind socket to port # w/ bind()
+	3) start listening for conns on that socket/port w/ listen()
+	4) loop and accept conns with accept(), connecting them to new sockets for each connection's exclusive use
+	5) read/write data to and from newly created sockets for conn'd and accepted clients using send() recv() read() write()
+
+connection and filling address struct same except for the s_addr:
+	serverAddress.sin_addr.s_addr = INADDR_ANY;
+
+Binding stuff...
+Even after the sockets are all closed, the OS doesn't immediately release the port
+	-> need to wait many seconds for it to be available again for reuse
+
+
+int bind(in sockfd, struct sockaddr *address, size_t add_len);
+	-1 on error, 0 = success
+		socket we're binding to the port
+			network address struct which identifies which port this socket will use
+				size of the address struct
+
+
+Listening for conns
+	-> svr will ignore any conn attempts until you tell the socket to start with listen()
+	-> once done, socket will begin queing up conn reqs until connection queue limit reached
+
+	int listen(int sockfd, int queue_size);
+		0 = suc, -1 = fail
+			socket we're enabling for conns
+				max # of conns to queue
+
+loop and accept
+	-> "infinite loop"
+		accept takes the next conn in the queue
+
+	int accept(in sockfd, struct sockaddr* address, size_t &add_len);
+		rtn fd for new conn, -1 = error
+			socket were going to get a conn from
+				network addr struct, into which connecting client info will be written
+					size of addr struct
+
+	int establishedConnectionFD = accept(listenSocketFD,
+										(struct sockaddr*)&clientAddress,
+										&sizeOfClientInfo);
+
+
+All at once:
+	-> want minimize response time
+	-> less complexity
+	-> more throughput
+	-> more cpu % usage
+
+Iterative server does 1 thing and returns
+	-> easy to build and maintain
+	-> good for when processing time is short or no i/o needed or when order matters
+
+Concurrent servers:
+
+	Apparent concurrency: single thread of exec, using select() cmd and non-blocking i/o
+		-> whenever an i/o req would block, switch to another connection
+		-> up to a certain # of clients being served:
+			max's cpu utilization
+			increases throughput
+		-> complexity involves tracking conns, choosing next to run, detecting blocking calls, etc..
+		-> works well if reqs are short
+
+	Real concurrency: multiple threads of exe or multiple procs, each w/ 1 thread
+		preemptive	- clinets can conn anytime to svr, which uses mult threads or processes to 					svrice conns
+
+		up to a certain # of conns
+			-> max cpu util
+			-> max response time
+			-> increasese throughput
+
+		-> harder to design, implement and maintain
+			-> need to put limits to prevent server hang
+
+		4 diff methods
+			i) 		create 1 proc per client conn
+				A: minimal shared state
+				D: fork slow
+
+			ii)  	create pool of avail procs b4 clients conn
+				A: no fork, rapid response as long as an idle proc available, can set pool size
+				D: process context switching, managing the pool can be complex
+
+
+			iii)	use only 1 proc, but create 1 thread per client conn
+			iv) 	use only 1 proc, but create a pool of avail threads b4 clients conn
+
+			For both:
+				A: thread switche (fast) vs proc context switch (slow)
+					shared addr space, code, data, etc..
+
+				D: code must be thread safe
+					must always worry about inadvertent data sharing
+
+select()
+	-> 	for server like apps that have many comm channels open at once (like a pool of threads)		 
+
+
+Unix and Security  video 4
+--------------------------------------------------------------------------------------
+
+Mode bit used for monitor(0) [supervisor or system mode] or user(1) mode
+
+OS must ensure a user pgm could never gain ctrl of computer in monitor mode by storing a new address in the interrupt vector
+	-> all i/o instructions are privileged instructions
+		read, write, send, recv, fgets, putc
+
+root = super user account
+
+security bits:
+
+SUID = exe runs with effective user ID of the OWNER of the file
+SGID =  user ID of the GROUP OWNER of the file
 
 
 
